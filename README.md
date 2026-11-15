@@ -1,603 +1,405 @@
-<div align="center">
+<p align="center">
+  <img src="docs/assets/banner.svg" width="100%" alt="Predictive Tracking and Turret Control: an animated engagement in which a turret tracks a manoeuvring target through a radar blackout and fires a pulse once per second">
+</p>
 
-# PREDICTIVE TRACKING & TURRET CONTROL
+<p align="center">
+  <a href="https://github.com/Charon-68/Turrent-Control-System_ME319/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/Charon-68/Turrent-Control-System_ME319/ci.yml?branch=master&style=for-the-badge&label=CI&labelColor=0f2a44&logo=githubactions&logoColor=white" alt="CI status"></a>
+  <a href="#at-a-glance"><img src="https://img.shields.io/badge/held--out-1000%20%2F%201000%20intercepted-f5a524?style=for-the-badge&labelColor=0f2a44" alt="1000 of 1000 held-out engagements intercepted"></a>
+  <a href="#verification"><img src="https://img.shields.io/badge/checks-25%20%2F%2025-2c5d86?style=for-the-badge&labelColor=0f2a44" alt="25 of 25 checks pass"></a>
+  <a href="https://octave.org/"><img src="https://img.shields.io/badge/GNU%20Octave-8.4%20to%2011.3-2c5d86?style=for-the-badge&labelColor=0f2a44&logo=octave&logoColor=white" alt="GNU Octave 8.4 to 11.3"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-2c5d86?style=for-the-badge&labelColor=0f2a44" alt="MIT license"></a>
+</p>
 
-### For a Maneuvering Aerial Target
+<p align="center">
+  <a href="#at-a-glance"><b>Results</b></a>&nbsp;&nbsp;|&nbsp;&nbsp;<a href="#how-it-works"><b>How it works</b></a>&nbsp;&nbsp;|&nbsp;&nbsp;<a href="#run-it-in-a-minute"><b>Run it</b></a>&nbsp;&nbsp;|&nbsp;&nbsp;<a href="#repository-map"><b>Repository map</b></a>&nbsp;&nbsp;|&nbsp;&nbsp;<a href="#go-deeper"><b>Docs</b></a>
+</p>
 
-**ME 319 · Control Systems · IIT Bombay · Autumn 2026**
+<br>
 
-A model-based, estimation-led control system built from first principles in **GNU Octave** — combining target-state estimation, present-bearing prediction, exact plant-inverse feed-forward, PI feedback, and probabilistic fire control.
+A turret has to hit a manoeuvring drone using nothing but noisy 20 Hz radar that can go silent for half a second, driven by a motor that rings if you push it too hard. This project solves that from first principles in **GNU Octave**: a Kalman filter that predicts the target, a controller that inverts the plant exactly, and a fire rule that pulls the trigger only when the posterior says the hit is in. Then it tests the frozen design on **1,000 engagements it has never seen**.
 
-[![GNU Octave](https://img.shields.io/badge/GNU%20Octave-11.3%2B-0790C0?logo=octave&logoColor=white)](https://octave.org/)
-[![Language](https://img.shields.io/badge/Language-MATLAB%2FOctave%20syntax-0076A8)](https://www.octave.org/)
-[![Tests](https://img.shields.io/badge/Checks-25%2F25%20passed-brightgreen)](#verification)
-[![Evaluation](https://img.shields.io/badge/Held--out%20campaign-1000%2F1000-brightgreen)](#held-out-evaluation)
-[![Course](https://img.shields.io/badge/Course-ME%20319-orange)](#)
+No MATLAB, no Simulink, no toolboxes. Every number below comes from a committed log you can regenerate.
 
-[**Architecture**](#system-architecture) · [**Results**](#results-at-a-glance) · [**Run it**](#quick-start) · [**Repository map**](#repository-map) · [**Engineering notes**](#engineering-notes)
+> [!NOTE]
+> This is an academic, software-only control-design project for ME 319 at IIT Bombay. The turret, target, radar and laser are all simulated; nothing here drives real hardware.
 
-</div>
+<br>
 
----
+## At a glance
 
-## The problem
+The frozen design, run on held-out seeds MC5000 to MC5999 at 100 Hz:
 
-A turret must track and intercept a maneuvering aerial target using only noisy radar measurements arriving at **20 Hz**. The target can maneuver, the radar can go silent for up to **0.5 s**, and the elevation drive is a lightly damped electromechanical plant with finite voltage and mechanical travel.
+| | |
+|:---|---:|
+| Engagements intercepted | **1000 / 1000** |
+| Failure probability, Wilson 95 % upper bound | **< 0.383 %** |
+| First hit, mean / 95th percentile | **1.24 s / 1.82 s** |
+| Pointing error RMS, median / 95th percentile | **0.56 m / 0.83 m** |
+| Pulses on target | **9,198 of 9,204** (99.93 %) |
+| Time inside the 2 m engagement radius | **99.43 %** |
+| Controller cost per call | **0.53 ms** mean, 0.73 ms p99 |
 
-The controller must do more than follow a measured angle:
+<p align="center">
+  <img src="plots/report_final_eval.png" width="94%" alt="Held-out first-hit and pointing-RMS distributions, plus the independent call-rate campaign">
+</p>
 
-- Estimate the target's motion from noisy range–bearing observations.
-- Predict its motion through the measurement delay and radar blackouts.
-- Move a constrained turret without exciting its lightly damped dynamics.
-- Decide **when** to issue a pulse, accounting for uncertainty and the one-second recharge interval.
-- Remain reliable across maneuver profiles, call rates, measurement conventions, and plant variations.
+<details>
+<summary><b>Standard scenarios A to D6</b> (100 Hz, turret starting at 0°)</summary>
+<br>
 
-This repository contains the complete GNU Octave implementation, analytical control studies, simulation harness, verification suite, evaluation outputs, plots, and IEEE-style technical report.
+| Scenario | What the target does | First hit | Pulses hit | Pointing RMS | In 2 m radius |
+|:---|:---|---:|---:|---:|---:|
+| **A** | Flies straight at constant velocity | 0.94 s | 9 / 9 | 0.40 m | 100 % |
+| **B** | Smooth, bounded manoeuvres | 0.94 s | 9 / 9 | 0.51 m | 100 % |
+| **C** | Scenario A with a 0.5 s radar blackout at 1 s | 0.94 s | 9 / 9 | 0.37 m | 100 % |
+| **D1** | Breaks away during a data loss | 0.70 s | 10 / 10 | 0.43 m | 100 % |
+| **D2** | Weaves | 0.98 s | 9 / 9 | 0.75 m | 100 % |
+| **D3** | Close pass, turret reaches 83° | 1.23 s | 9 / 9 | 0.36 m | 100 % |
+| **D4** | Repeated outages | 0.94 s | 9 / 9 | 0.73 m | 97.4 % |
+| **D5** | Weaves from a close start | 1.12 s | 9 / 9 | 0.76 m | 98.1 % |
+| **D6** | Aggressive jerk reversals | 1.07 s | 9 / 9 | 0.87 m | 96.0 % |
 
-> **Scope:** This is an academic, software-only simulation and control-design project. The turret, target, radar, laser beam, and firing events are modeled in software; the repository does not implement or operate physical weapon hardware.
+Source: [`outputs/suite_100Hz.txt`](outputs/suite_100Hz.txt), regenerated with `make scenarios`.
 
-## Results at a glance
+</details>
 
-The figures below are from the committed evaluation artifacts, not hand-picked single-run demonstrations.
+<details>
+<summary><b>Call-rate check</b>: five separately written trajectory families, 100 cases each</summary>
+<br>
 
-| Evaluation | Reported result |
-|---|---:|
-| Frozen design, held-out random engagements | **1,000 / 1,000 intercepted** |
-| Held-out Wilson 95% upper bound on failure probability | **< 0.383%** |
-| Mean first-interception time | **1.236 s** |
-| 95th-percentile first-interception time | **1.820 s** |
-| Median pointing RMS across held-out runs | **0.564 m** |
-| 95th-percentile pointing RMS | **0.834 m** |
-| Time spent inside the 2 m engagement radius | **99.43%** |
-| Independent campaign | **500 / 500 intercepted per call-rate configuration** |
-| Full local verification suite | **25 / 25 checks passed** |
-
-<sub>Held-out campaign: seeds MC5000–MC5999, frozen design, 100 Hz controller calls, initial turret angle 0°. Independent campaign: five separately implemented trajectory families, 100 cases per family, at 20/100/1000 Hz. Both generators and campaign runners are project-authored; the independent campaign is an independent implementation within this project, not an external validation.</sub>
-
-### Held-out campaign
-
-| Metric | Result |
-|---|---:|
-| Interceptions | 1000 / 1000 |
-| Wilson 95% interval for success | [0.9962, 1.0000] |
-| First-hit time — mean / median | 1.236 / 1.240 s |
-| First-hit time — p95 / maximum | 1.820 / 2.350 s |
-| Pointing RMS — median / p95 | 0.564 / 0.834 m |
-| Pulses on target | 9,198 / 9,204 |
-| Worst pulse miss distance | 3.354 m |
-
-The 1,000/1,000 result corresponds to a **Wilson lower confidence limit** of 0.9962; the reported one-sided failure bound is therefore below 0.383% under this simulation protocol. It is an empirical result for the specified held-out seed family, not a guarantee for arbitrary targets or real hardware.
-
-### Standard scenarios
-
-At 100 Hz, with the turret starting at 0°:
-
-| Scenario | Description | First hit | Pulses hit | Pointing RMS |
-|---|---|---:|---:|---:|
-| A | Constant-velocity target | 0.94 s | 9 / 9 | 0.402 m |
-| B | Smooth bounded manoeuvres | 0.94 s | 9 / 9 | 0.513 m |
-| C | Scenario A with a 0.5 s radar blackout | 0.94 s | 9 / 9 | 0.375 m |
-
-### Controller call-rate check
-
-The separately implemented campaign covers five families — weave, step, bang-bang, arc, and pop-up — with 100 cases per family at each rate.
-
-| Controller rate | Interceptions | Mean first hit |
+| Controller rate | Intercepted | Mean first hit |
 |---:|---:|---:|
-| 20 Hz | 500 / 500 | 1.357 s |
-| 100 Hz | 500 / 500 | 1.075 s |
-| 1000 Hz | 500 / 500 | 1.083 s |
-
-The complete logs and per-run data are in [`outputs/`](outputs/), with the evaluation protocol documented in [`docs/PROTOCOL.md`](docs/PROTOCOL.md).
-
----
-
-## System architecture
-
-The design separates **estimating where the target is now**, **generating a smooth reference for the turret**, and **deciding whether a pulse is worth issuing**.
-
-<div align="center">
-
-<img src="plots/report_blockdiagram.png" alt="Predictive tracking and turret control block diagram" width="94%">
-
-<sub>Closed-loop architecture — generated from the Octave model.</sub>
-
-</div>
-
-### 1. Target motion and radar measurements
-
-`target_motion_generator.m` provides scripted and seeded target trajectories. Radar observations are generated every 50 ms (20 Hz), with range noise of 1 m and bearing noise of 0.02°. Blackouts return invalid measurements rather than fabricated observations.
-
-The standard scenario set is:
-
-- **A — constant velocity:** straight-line target motion.
-- **B — manoeuvring:** smooth, bounded acceleration in both Cartesian axes.
-- **C — blackout:** scenario A with a 0.5 s radar outage beginning at 1 s.
-- **D1–D6 — stress scenarios:** break-away during data loss, weave, close pass, repeated outages, close-start weave, and aggressive jerk reversals.
-- **MC\<seed\> — random admissible trajectories:** reproducible Monte Carlo family.
-- **HB\<seed\> — adversarial trajectories:** deliberately difficult manoeuvres and outage timing.
-- **Sensor variants:** `+glint`, `+range`, and `+bias` for out-of-spec sensitivity checks.
-
-The scenario definitions and the assumptions used where the assignment leaves initial conditions or manoeuvre shapes unspecified are recorded in [`core/tc_scenario_catalog.m`](core/tc_scenario_catalog.m) and [`docs/ASSUMPTIONS.md`](docs/ASSUMPTIONS.md).
-
-### 2. Converted-measurement Kalman filter
-
-The estimator converts polar radar measurements \((r,\theta)\) into bias-corrected Cartesian observations \((x,y)\), with the corresponding measurement covariance.
-
-Each Cartesian axis is modeled with position, velocity, acceleration, and jerk states:
-
-\[
-\mathbf{x}=[p,\ v,\ a,\ j]^\mathsf{T},
-\qquad
-\dot j=-\frac{1}{\tau_j}j+w.
-\]
-
-The filter includes:
-
-- A Gauss–Markov jerk model for manoeuvring-target estimation.
-- Closed-form transition and process-noise matrices for arbitrary sample gaps.
-- Innovation gating and rejection of repeated or too-close measurements.
-- Joseph-form covariance updates.
-- NIS-driven adaptive process-noise scaling.
-- Speed, acceleration, and jerk envelope projection.
-- Covariance growth during blackouts and track recovery after long losses.
-
-The implementation avoids numerically differentiating noisy bearing measurements. Instead, line-of-sight (LOS) derivatives are obtained analytically from the estimated Cartesian state.
-
-**Key modules:** `core/tc_convert_measurement.m`, `core/tc_jerk_model_transition.m`, `core/tc_filter_update.m`, `core/tc_los_derivatives.m`.
-
-### 3. Prediction without aiming at the wrong point
-
-The assignment specifies a prediction horizon of \(t_p=0.5\) s. That does **not** mean the laser should point at the future bearing: the simulated beam is instantaneous, and a pulse must intersect the target's **present** position.
-
-Aiming directly at the future bearing can introduce a large geometric miss. The design therefore uses the third-order Taylor prediction
-
-\[
-r=A_3(D)\hat{\theta}, \qquad
-A_3(D)=1+t_pD+\frac{(t_pD)^2}{2}+\frac{(t_pD)^3}{6},
-\]
-
-as an input to a reference generator rather than as the beam command.
-
-The reference generator is constructed so that
-
-\[
-(A_3+K)(D)y_d=r+K(D)\hat{\theta},
-\qquad
-A_3+K=\frac{t_p^3}{6}(D+p)^3.
-\]
-
-Substitution gives
-
-\[
-(D+p)^3(y_d-\hat{\theta})=0.
-\]
-
-Consequently, the generated reference follows the **current estimated LOS** through a stable triple-pole transient, while providing the derivatives required by the plant inverse. The controller's tracking loop is analytically independent of \(t_p\) under this construction.
-
-### 4. Turret plant and two-degree-of-freedom control
-
-The modeled elevation drive uses armature and mechanical dynamics:
-
-\[
-L\dot i=V_m-Ri-NK_e\dot{\theta}_T,
-\]
-
-\[
-J_{eq}\ddot{\theta}_T=NK_ti-b\dot{\theta}_T.
-\]
-
-The nominal transfer function is
-
-\[
-G_p(s)=\frac{\theta_T(s)}{V_m(s)}
-=\frac{1000}{s(320s^2+3350s+1.0015\times10^6)}.
-\]
-
-Its lightly damped electromechanical pole pair is approximately
-
-\[
-s=-5.23\pm j55.70\ \text{rad/s},
-\qquad
-\omega_n=55.9\ \text{rad/s},
-\qquad
-\zeta=0.094.
-\]
-
-The controller combines an exact inverse of the nominal plant with a PI compensator and high-frequency roll-off:
-
-\[
-V_m=G_p^{-1}(D)y_d+C(s)(y_d-\theta_T),
-\]
-
-\[
-C(s)=K_p\frac{T_is+1}{T_is(\tau_fs+1)}.
-\]
-
-For the nominal model, the inverse is
-
-\[
-G_p^{-1}(D)y_d
-=0.32\,y_d^{(3)}+3.35\,y_d^{(2)}+1001.5\,y_d^{(1)}.
-\]
-
-The implemented design uses \(K_p=4000\ \text{V/rad}\), \(T_i=1\ \text{s}\), and \(\tau_f=0.03\ \text{s}\). The reported continuous-loop margins are:
-
-| Design quantity | Value |
-|---|---:|
-| Gain crossover frequency | 4.10 rad/s |
-| Phase margin | 68.5° |
-| Gain margin | 16.1 dB |
-| Peak sensitivity \(M_s\) | 1.21 |
-| Closed-loop bandwidth | 5.72 rad/s |
-
-The plant applies a ±600 V voltage clamp. Mechanical travel is limited to −10°…85°. Acquisition-rate and acceleration clamps are derived from the shared parameter set. The 10 A acquisition-current budget is a **design assumption**, not a hard current saturation in the nominal `turret_plant.m` interface.
-
-### 5. Probabilistic fire control
-
-The firing logic does not simply pulse whenever the angular error is small. It evaluates the probability that a pulse issued **now** will land within the 2 m engagement radius.
-
-The posterior hit-probability calculation:
-
-- Conditions the target-position estimate on the acceleration posterior.
-- Truncates acceleration hypotheses to the modeled physical envelope.
-- Integrates the resulting beam-normal offset distribution using a 25-node tensor Gauss–Hermite rule.
-- Tracks both hit probability and the posterior mass of futures whose centre offset lies inside the engagement radius.
-
-The fire rule is an optimal-stopping heuristic:
-
-- **Tracking:** fire immediately above the high-confidence threshold, or arm and wait for a probability peak / timeout.
-- **Coasting:** require a sufficiently high, decreasing hit probability before firing during a data outage.
-- **After the first pulse:** use a stricter threshold because first-interception time has already been determined.
-- Enforce the one-second recharge interval, minimum estimator updates, and a probability-consistency condition.
-
-**Key modules:** `core/tc_hit_probability.m`, `core/tc_firing_rule.m`, `core/tc_beam_miss_distance.m`.
-
----
-
-## Control-design analysis
-
-The repository is intended to be inspectable as a control-systems project, not just run as a black-box simulation. The `studies/` directory reproduces the analytical reasoning and generates figures and numerical summaries.
-
-| Study | What it investigates |
-|---|---|
-| Plant response | Transfer-function model, poles, damping, impulse and step response |
-| Root locus and Routh | Closed-loop pole movement and gain stability limits |
-| Bode and margins | Gain crossover, phase margin, gain margin and sensitivity |
-| Compensator comparison | Proportional, lead-compensated and PI + roll-off alternatives |
-| Feed-forward vs feedback | Contributions and model-mismatch sensitivity in the linear model |
-| LOS linearisation | Range/bearing geometry and cross-range uncertainty |
-| Sampling and delay | Radar Nyquist frequency, controller rate, ZOH and delay-induced phase loss |
-| Uncertainty margins | ±20% variations in motor and mechanical parameters |
-| Design iterations | Measured rationale behind adopted and rejected design changes |
-| Ablation and robustness | Paired design comparisons and stress-condition performance |
-
-The analysis is implemented directly in Octave using the project’s polynomial and state-space routines; it does not require MATLAB Control System Toolbox.
-
-### Selected design plots
-
-<div align="center">
-
-<img src="plots/design_analysis.png" alt="Pole-zero map, Bode response, and closed-loop step response" width="94%">
-
-<sub>Nominal-loop pole-zero, frequency-response, and step-response analysis.</sub>
-
-<br><br>
-
-<img src="plots/report_estimation.png" alt="Target estimation and prediction errors" width="94%">
-
-<sub>Nowcast and prediction error, including the effect of a radar blackout.</sub>
-
-<br><br>
-
-<img src="plots/report_scenarios.png" alt="Scenario A, B and C tracking response" width="94%">
-
-<sub>Target/turret elevation, beam error, pulse events, and motor voltage.</sub>
-
-<br><br>
-
-<img src="plots/report_final_eval.png" alt="Held-out Monte Carlo evaluation results" width="94%">
-
-<sub>Held-out first-hit and pointing-RMS distributions, plus independent call-rate campaign.</sub>
-
-</div>
-
----
-
-## Quick start
-
-### Requirements
-
-- **GNU Octave** — developed and re-run locally with Octave 11.3.0.
-- **GNU Make** — for the project shortcuts below.
-- No MATLAB licence, Simulink, Control System Toolbox, or third-party Octave package is required by the core project.
-
-On macOS, install Octave with Homebrew:
-
-```bash
-brew install octave
+| 20 Hz | 500 / 500 | 1.36 s |
+| 100 Hz | 500 / 500 | 1.08 s |
+| 1000 Hz | 500 / 500 | 1.08 s |
+
+The families are weave, step, bang-bang, arc and pop-up, each with one random blackout and a random starting angle. The generator and runner were written separately from the main harness but by the same team, so this is implementation diversity, not external validation. Source: [`outputs/independent_check.txt`](outputs/independent_check.txt).
+
+</details>
+
+<br>
+
+## The challenge
+
+| Constraint | Value |
+|:---|:---|
+| Radar | 20 Hz range and bearing, σ<sub>r</sub> = 1 m, σ<sub>θ</sub> = 0.02° |
+| Blackouts | Up to 0.5 s with no data at all |
+| Target | Up to 150 m/s and 20 m/s², 800 to 2000 m away |
+| Elevation drive | Lightly damped poles at 8.9 Hz, ζ = 0.094 |
+| Limits | Travel from −10° to 85°, supply ±600 V (assumed) |
+| Weapon | 2 m engagement radius, 1 s recharge, 0.5 s prediction horizon |
+
+Following a measured angle is not enough. The controller has to estimate motion it cannot see, ride through blackouts, move a resonant turret without making it ring, and decide *when* a pulse is worth its one-second recharge.
+
+<br>
+
+## How it works
+
+```mermaid
+flowchart LR
+  R(["Radar<br/>20 Hz, r and θ"]) --> KF["Kalman filter<br/>Markov-jerk model"]
+  KF --> NOW["Nowcast<br/>LOS angle and derivatives"]
+  NOW --> REF["Reference generator<br/>locks on the present bearing"]
+  REF --> FF["Plant-inverse<br/>feed-forward"]
+  REF --> PI["PI + roll-off<br/>feedback"]
+  FF --> SUM(("Σ"))
+  PI --> SUM
+  SUM --> SAT["±600 V clamp"]
+  SAT --> P["Turret plant<br/>ζ = 0.094"]
+  P -- "θ, ω" --> PI
+  KF --> PH["Hit probability<br/>25-node Gauss–Hermite"]
+  PH --> FIRE{"Fire now<br/>or wait?"}
+  FIRE --> F(["Pulse<br/>1 s recharge"])
+
+  classDef ink fill:#0f2a44,stroke:#8fb0c9,color:#e8f1f8
+  classDef amber fill:#f5a524,stroke:#c9811a,color:#0f2a44
+  class R,KF,NOW,REF,FF,PI,SUM,SAT,P,PH ink
+  class FIRE,F amber
 ```
 
-On Ubuntu / Debian:
+| Stage | What it does | Where |
+|:---|:---|:---|
+| **Estimate** | Converts each polar radar fix to bias-corrected Cartesian coordinates and runs a position–velocity–acceleration–jerk Kalman filter per axis, with innovation gating, Joseph-form updates and NIS-driven adaptive process noise. | [`core/tc_filter_update.m`](core/tc_filter_update.m) |
+| **Nowcast** | Propagates the track to *now* and computes the line-of-sight angle and its derivatives analytically, so noisy bearings are never differentiated. | [`core/tc_los_derivatives.m`](core/tc_los_derivatives.m) |
+| **Reference** | Builds a smooth reference that follows the present bearing through a stable triple pole, with acquisition clamps for large slews. | [`core/tc_reference_chain.m`](core/tc_reference_chain.m) |
+| **Control** | Exact inverse of the nominal plant as feed-forward, plus PI feedback with high-frequency roll-off and conditional integration. | [`turret_controller.m`](turret_controller.m) |
+| **Fire** | Integrates the posterior over acceleration hypotheses to get the probability that a pulse fired now lands within 2 m, then decides to fire, arm and wait, or hold. | [`core/tc_firing_rule.m`](core/tc_firing_rule.m) |
 
-```bash
-sudo apt-get update
-sudo apt-get install octave make
+Every constant lives in one file, [`core/tc_params.m`](core/tc_params.m). Plant-derived quantities such as the feed-forward gains are computed there, never typed by hand.
+
+> [!IMPORTANT]
+> **Predict ahead, aim at the present.** The handout prescribes a 0.5 s prediction, but the laser is instantaneous: a pulse must cross the target where it is *now*. Aiming at the predicted bearing would miss by metres.
+>
+> So the prediction $`r = A_3(D)\,\hat\theta`$ is fed into a reference generator built to cancel it exactly:
+>
+> ```math
+> (A_3 + K)(D)\,y_d = r + K(D)\,\hat\theta, \qquad A_3 + K = \tfrac{t_p^3}{6}(D+p)^3
+> \quad\Longrightarrow\quad (D+p)^3\,(y_d - \hat\theta) = 0
+> ```
+>
+> The reference converges on the current estimated bearing through a stable triple pole, and still supplies the three derivatives the plant inverse needs.
+
+<details>
+<summary><b>The math, stage by stage</b></summary>
+<br>
+
+**Target model.** Each Cartesian axis carries position, velocity, acceleration and a Gauss–Markov jerk:
+
+```math
+\mathbf{x} = [\,p,\ v,\ a,\ j\,]^\mathsf{T}, \qquad \dot j = -\frac{1}{\tau_j}\,j + w
 ```
 
-### 1. Clone the repository
+Transition and process-noise matrices are closed-form for any sample gap, so a blackout needs no special case: one exact $`F(\Delta t), Q(\Delta t)`$ covers it.
+
+**Third-order Taylor prediction** over the horizon $`t_p = 0.5`$ s:
+
+```math
+A_3(D) = 1 + t_p D + \frac{(t_p D)^2}{2} + \frac{(t_p D)^3}{6}
+```
+
+**Plant.** Armature and mechanics, with gear ratio $`N`$ reflecting the motor onto the turret shaft:
+
+```math
+L\,\dot i = V_m - R\,i - N K_e\,\dot\theta_T, \qquad J_{eq}\,\ddot\theta_T = N K_t\,i - b\,\dot\theta_T
+```
+
+```math
+G_p(s) = \frac{\theta_T(s)}{V_m(s)} = \frac{1000}{s\,(320 s^2 + 3350 s + 1.0015\times 10^6)}, \qquad s = -5.23 \pm 55.70\,j
+```
+
+**Two-degree-of-freedom control.** Exact plant inverse plus PI with roll-off:
+
+```math
+V_m = G_p^{-1}(D)\,y_d + C(s)\,(y_d - \theta_T), \qquad C(s) = K_p\,\frac{T_i s + 1}{T_i s\,(\tau_f s + 1)}
+```
+
+```math
+G_p^{-1}(D)\,y_d = 0.32\,\dddot y_d + 3.35\,\ddot y_d + 1001.5\,\dot y_d
+```
+
+**Fire control.** With acceleration $`a \sim \mathcal N(\mu_a, P_{aa})`$ truncated to the physical envelope, the position conditioned on $`a`$ is Gaussian, and the beam-normal offset $`d_i`$ of each of 25 tensor Gauss–Hermite nodes gives
+
+```math
+P_{hit} = \sum_i w_i \left[\Phi\!\left(\frac{R - d_i}{\sigma}\right) - \Phi\!\left(\frac{-R - d_i}{\sigma}\right)\right]
+```
+
+The rule fires immediately above 0.99, arms above 0.90 and fires at the probability peak or after 0.3 s, and during a blackout fires only while the probability is high and falling. After the first pulse the bar rises to 0.995.
+
+</details>
+
+### The loop, by the numbers
+
+| $`K_p`$ | $`T_i`$ | $`\tau_f`$ | Crossover | Phase margin | Gain margin | Peak sensitivity | Bandwidth |
+|---:|---:|---:|---:|---:|---:|---:|---:|
+| 4000 V/rad | 1 s | 0.03 s | 4.10 rad/s | **68.5°** | **16.1 dB** | 1.21 | 5.72 rad/s |
+
+All of it is derived with the project's own polynomial routines; no Control System Toolbox is needed.
+
+<br>
+
+## Figures
+
+<table>
+  <tr>
+    <td width="50%"><img src="plots/report_scenarios.png" alt="Scenario A, B and C tracking response"></td>
+    <td width="50%"><img src="plots/report_estimation.png" alt="Nowcast and prediction error through a blackout"></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>Tracking, beam error, pulses and voltage for scenarios A to C</sub></td>
+    <td align="center"><sub>Nowcast and prediction error, including the blackout</sub></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="plots/design_analysis.png" alt="Pole-zero map, Bode response and closed-loop step response"></td>
+    <td width="50%"><img src="plots/report_blockdiagram.png" alt="Closed-loop block diagram"></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>Pole-zero map, Bode response and step response</sub></td>
+    <td align="center"><sub>Closed-loop architecture, drawn from the model</sub></td>
+  </tr>
+</table>
+
+Eleven more course-concept studies (root locus, Routh limits, sensitivity, sampling and delay, ±20 % parameter uncertainty, compensator comparison) live in [`plots/`](plots/) and [`outputs/`](outputs/).
+
+<br>
+
+## Run it in a minute
+
+You need GNU Octave and Make (`brew install octave` or `sudo apt-get install octave make`).
 
 ```bash
 git clone https://github.com/Charon-68/Turrent-Control-System_ME319.git
 cd Turrent-Control-System_ME319
-```
-
-The Octave project and its `Makefile` live in the repository root; run every command below from there.
-
-### 2. Run the quick verification and design summary
-
-```bash
 make quick
 ```
 
-This runs the fast analytical checks, the standard A–D6 scenario suite, and the nominal plant/loop design report.
+That runs the fast checks, all nine scenarios and the loop design report. Expect a table like this:
 
-### 3. Run the full test suite
-
-```bash
-make test
+```text
+scn  first hit    hits   RMS [m]  in R_eng   V_peak
+A        0.94s   9/9        0.40    100.0%      589
+B        0.94s   9/9        0.51    100.0%      589
+C        0.94s   9/9        0.37    100.0%      589
+...
 ```
 
-The committed full-suite log records **25/25 checks passed**. The full suite also executes closed-loop interception, call-rate, interface-convention, recovery, repeatability, and plant-mismatch checks; it takes longer than the quick subset.
+<details>
+<summary><b>Every <code>make</code> target</b></summary>
+<br>
 
-### 4. Run the standard scenario suite
-
-```bash
-make scenarios
-```
-
-### 5. Generate report figures
-
-```bash
-make report-figures
-```
-
-Generated PNG and PDF plots are written to `plots/`. Numerical output and experiment logs are written to `outputs/`.
-
----
-
-## Make targets
-
-Run all targets from the repository root.
-
-| Command | Purpose |
-|---|---|
-| `make quick` | Fast checks, scenario suite, design report |
-| `make test-quick` | Quick verification subset |
-| `make test` | Full verification suite |
-| `make scenarios` | Run A–D6 at the default 100 Hz controller rate |
-| `make design` | Print nominal plant and loop design metrics |
-| `make figures` | Generate design, error-budget, and scenario plots |
-| `make report-figures` | Generate the six report figures |
-| `make heldout` | Run held-out campaign chunk MC5000–5299 |
+| Command | What it does |
+|:---|:---|
+| `make quick` | Fast checks, scenario suite and design report |
+| `make test-quick` | Quick verification subset (what CI runs) |
+| `make test` | Full 25-check verification suite |
+| `make scenarios` | Scenarios A to D6 at 100 Hz |
+| `make design` | Plant and loop design metrics |
+| `make eval-check` | Evaluation-interface adapter and MATLAB-syntax scan |
+| `make figures` | Design, error-budget and scenario plots |
+| `make report-figures` | The six figures used in the report |
+| `make heldout` | Held-out chunk MC5000 to 5299 |
 | `make heldout-merge` | Merge the three held-out chunks into `outputs/heldout_final` |
-| `make independent` | Run the independent-generator campaign (five families) and write its report |
+| `make independent` | Independent campaign: five families, then its report |
+| `make ablation` | Paired ablation study on MC201 to 260 |
+| `make robustness` | Call rate, conventions, start angle, mismatch and sensor stress |
 | `make calibration` | Hit-probability calibration study |
-| `make ablation` | Paired ablation study on MC201–260 |
-| `make robustness` | Call-rate, convention, start-angle, mismatch and sensor stress study |
-| `make timing` | Measure controller-call execution time |
-| `make start-angle` | Study first-pulse miss distance versus starting angle |
-| `make eval-check` | Check the evaluation adapter and submission syntax |
-| `make course` | Run the eleven course-concept analysis studies |
-| `make export` | Regenerate the report's numbers and tables in `report/generated/` |
+| `make timing` | Cost of one controller call |
+| `make start-angle` | First-pulse miss versus starting angle |
+| `make course` | All eleven course-concept studies (or one: `course-bode`, `course-sens`, ...) |
+| `make export` | Regenerate the report's numbers and tables |
 | `make report-zip` | Build the Overleaf bundle `build/overleaf.zip` |
 
-The `Makefile` also exposes individual `course-*` targets (`course-los`, `course-plant`, `course-bode`, `course-sens`, `course-specs`, `course-margins`, `course-comp`, `course-ff`, `course-delay`, `course-sampling`, `course-iter`) for targeted analysis.
+`make heldout` runs one chunk. The committed 1,000-seed result merges three chunks; [`outputs/README.md`](outputs/README.md) records the exact commands.
 
-> **Reproducing the final held-out set:** `make heldout` runs only the first chunk (MC5000–5299). The committed 1,000-seed aggregate combines MC5000–5299, MC5300–5649, and MC5650–5999. The merge command and exact provenance are documented in [`outputs/README.md`](outputs/README.md). Do not describe a single `make heldout` invocation as a fresh 1,000-case campaign.
+</details>
 
----
+### Drop the controller into your own loop
 
-## Run the controller through the assignment interface
-
-The three top-level assignment-facing functions are:
-
-- `target_motion_generator.m`
-- `turret_controller.m`
-- `turret_plant.m`
-
-From the repository root, initialise the project path:
+The three assignment functions sit in the repository root. This runs 5 s of scenario B with a 100 Hz controller and a 1 kHz plant:
 
 ```octave
-tc_setup();
+tc_setup();  clear turret_controller
+dt = 1e-3;  x = [0; 0; 0];            % plant state [theta; theta_dot; i]
+V = 0;  fired = [];  last = 0;
+for k = 0:5000
+  t = k*dt;
+  if mod(k, 10) == 0                  % controller at 100 Hz
+    [r, th, ok] = target_motion_generator(t, 'B');
+    [V, fire] = turret_controller(t, r, th, ok, x(1), x(2));
+    if fire && ~last, fired(end+1) = t; end
+    last = fire;
+  end
+  [d1, d2, d3] = turret_plant(t, V, x(1), x(2), x(3));
+  x = x + dt*[d1; d2; d3];            % forward Euler is stable for dt <= 1 ms
+end
+fprintf('pulses at: %s s\n', mat2str(fired, 3));   % pulses at: [0.94 1.95 2.96 3.97 4.98] s
 ```
 
-Generate a radar measurement:
+The controller keeps state between calls: start at $`t = 0`$, keep time increasing, and `clear turret_controller` between runs. Ask for a third output, `[V, fire, dbg] = turret_controller(...)`, to see the mode, estimate, feed-forward and feedback split, and hit probability at every tick.
 
-```octave
-[r_meas, theta_meas, meas_valid] = target_motion_generator(t, 'B');
-```
-
-Call the controller with the current turret state:
-
-```octave
-[V_m, fire_cmd] = turret_controller( ...
-    t, r_meas, theta_meas, meas_valid, theta_turret, theta_dot_turret);
-```
-
-Integrate the plant state
-
-\[
-[\theta_T,\ \dot{\theta}_T,\ i]^\mathsf{T}
-\]
-
-using the commanded voltage \(V_m\), holding the command over the integration step.
-
-For debugging, the controller also exposes a third output:
-
-```octave
-[V_m, fire_cmd, dbg] = turret_controller( ...
-    t, r_meas, theta_meas, meas_valid, theta_turret, theta_dot_turret);
-```
-
-`dbg` includes the tracking mode, estimated LOS, predicted reference, feed-forward and feedback contributions, hit probability, posterior consistency, and estimator state.
-
-The controller is stateful across calls. Start a fresh run at \(t=0\), use monotonically increasing time, and call `clear turret_controller` between independent simulations when reusing a MATLAB/Octave session.
-
----
+<br>
 
 ## Repository map
 
 ```text
-Turrent-Control-System_ME319/
+├── turret_controller.m          the controller and fire logic (assignment interface)
+├── turret_plant.m               elevation-drive dynamics (assignment interface)
+├── target_motion_generator.m    scripted and seeded targets with radar noise (assignment interface)
+├── tc_setup.m                   puts the project folders on the path
+├── Makefile                     every reproducible command
 │
-├── tc_setup.m                # Adds project folders to the Octave path
-├── turret_plant.m            # Elevation-drive differential equations
-├── turret_controller.m       # Stateful predictive controller + fire logic
-├── target_motion_generator.m # Scripted and seeded target/radar generator
-├── Makefile                  # Reproducible project commands; run them here
-├── LICENSE
-│
-├── core/                     # Model, estimator, predictor and fire-control blocks
-├── simulation/               # Closed-loop plant, engagement and campaign runners
-├── studies/                  # Analytical studies, ablations, robustness and plots
-├── tests/                    # Self-contained test suite, evaluation-interface adapter and syntax checks
-├── docs/                     # Assignment handout, assumptions, design rationale and evaluation protocol
-├── outputs/                  # Text summaries, logs and saved simulation data
-├── plots/                    # Generated figures (PNG and PDF)
-├── report/                   # IEEE-style technical report; generated/ holds its numbers and tables
-│
-└── .github/
-    └── workflows/
-        └── ci.yml            # Octave CI workflow
+├── core/          estimator, prediction, reference, fire control, and tc_params.m
+├── simulation/    closed-loop runner, campaigns, independent generator
+├── studies/       analyses, ablations, robustness, plotting, report export
+├── tests/         25-check suite, evaluation-interface adapter, syntax scan
+├── docs/          design notes, assumptions, protocol, decisions, handout
+├── outputs/       every result log and saved dataset, with provenance
+├── plots/         every figure, as PNG and PDF
+└── report/        IEEE-format report; generated/ holds its numbers and tables
 ```
 
-### Important files
-
-| File | Role |
-|---|---|
-| `core/tc_params.m` | Single source of truth for physical, estimator, controller and firing parameters |
-| `turret_controller.m` | Assignment-facing controller |
-| `turret_plant.m` | Assignment-facing motor/turret dynamics |
-| `target_motion_generator.m` | Assignment-facing target and radar generator |
-| `simulation/tc_run_engagement.m` | Closed-loop engagement runner |
-| `tests/tc_test_all.m` | Full self-contained verification suite |
-| `tests/eval_adapter.m` | Evaluation-interface emulator |
-| `docs/ASSUMPTIONS.md` | Explicit assumptions where the handout is underspecified |
-| `docs/DESIGN.md` | Architecture and design rationale |
-| `docs/PROTOCOL.md` | Seed separation and statistical reporting rules |
-| `outputs/README.md` | Provenance of generated output files |
-| `report/main.tex` | IEEE-style project report |
-
----
+<br>
 
 ## Verification
 
-The self-contained test suite is implemented in `tests/tc_test_all.m`; it has no xUnit dependency.
+[`tests/tc_test_all.m`](tests/tc_test_all.m) is a self-contained suite with no xUnit dependency. CI runs the quick subset, the scenario table and the evaluation-interface checks on every push.
 
-It checks, among other things:
+<details>
+<summary><b>What the 25 checks cover</b></summary>
+<br>
 
-- Plant poles, linearisation, and voltage saturation.
-- Feed-forward coefficients derived from the nominal plant.
-- Kalman transition matrices against a Van Loan construction.
-- Polar-to-Cartesian measurement conversion and covariance.
-- LOS derivative calculations.
-- Taylor-reference stability and beam-miss geometry.
-- Scenario envelopes, radar ticks, blackouts and deterministic noise.
-- Hit-probability monotonicity and fire-control geometry.
-- Exact-ZOH and RK4 integration agreement.
-- Continuous-loop gain and phase margins.
-- Standard intercepts, alternate controller rates and measurement conventions.
-- Lost-track recovery, repeatability, and plant mismatch.
-
-The committed run log is [`outputs/test_full.txt`](outputs/test_full.txt):
+- Plant poles, linearisation and voltage saturation
+- Feed-forward coefficients re-derived from the plant
+- Kalman transition matrices against a Van Loan construction
+- Polar-to-Cartesian conversion and its covariance
+- Line-of-sight derivatives
+- Stability of the Taylor reference and beam-miss geometry
+- Scenario envelopes, radar ticks, blackouts and deterministic noise
+- Hit-probability monotonicity and fire-control geometry
+- Exact zero-order-hold and RK4 integration agree
+- Continuous-loop gain and phase margins
+- Interception at the standard rates and measurement conventions
+- Lost-track recovery, repeatability and plant mismatch
 
 ```text
 PASS  t_plant_poles
 PASS  t_plant_saturation
-PASS  t_ff_derived
 ...
-PASS  t_determinism
 PASS  t_plant_mismatch
 25/25 checks passed
 ```
 
-GitHub Actions is configured in `.github/workflows/ci.yml` to install Octave and run the quick checks, the scenario table and the evaluation-interface checks on pushes and pull requests. The workflow file documents the CI setup; the committed local test log is the evidence for the full 25-check run.
+Full log: [`outputs/test_full.txt`](outputs/test_full.txt).
 
----
+</details>
 
-## Engineering notes and assumptions
+<br>
 
-A good simulation result is only as meaningful as the model and evaluation protocol behind it. Several parameters are deliberately documented as **assumptions** because the course handout does not specify them.
+## Honest numbers
 
-Examples include:
+The protocol keeps tuning and evaluation apart, so every headline number is one the design never trained on.
 
-- ±600 V drive limit.
-- 10 A acquisition-current budget (used to set the acquisition acceleration clamp; not enforced as a plant current saturation).
-- Initial target states and manoeuvre shapes for A–C.
-- Initial turret angle unless explicitly varied.
-- The evaluator's sample timing and pulse-judgement convention.
-- Self-selected step-response targets used for comparative analysis; these are not handout requirements.
+| Seeds | Used for |
+|:---|:---|
+| MC1 to MC200 | Tuning and calibration |
+| MC201 to MC4999 | Exploration and paired design studies |
+| MC5000 to MC5999 | **Held-out evaluation only**, run once on the frozen design |
+| HB&lt;seed&gt; | Adversarial stress tests, reported separately |
 
-The design also has known boundaries:
+A run with no hit counts as a failure; it is never dropped from the statistics.
 
-- The nominal plant uses viscous damping; Coulomb friction and voltage dead-zone are explored as simulation variants.
-- The exact plant inverse relies on the nominal plant model. Parameter mismatch is evaluated, but cannot be assumed harmless.
-- The independent generator and runner are authored within this project. They provide implementation diversity, not external validation.
-- Large initial slews and opposite-sign \(K_t/K_e\) errors are documented sensitivity cases.
-- A 1,000-case Monte Carlo result is not a proof of performance outside the modeled target, sensor, plant and evaluation envelopes.
+> [!WARNING]
+> **Know the limits.** 1,000 out of 1,000 is an empirical result for this simulator and seed family, not a guarantee for arbitrary targets or real hardware.
+> - The plant inverse assumes the nominal model. ±20 % parameter mismatch is tested, and opposite-sign $`K_t`$/$`K_e`$ errors are the worst documented case.
+> - The ±600 V supply and 10 A acquisition budget are assumptions; the handout leaves them open.
+> - Coulomb friction and voltage dead-zone are explored as variants; the nominal plant uses viscous damping only.
+> - From an 80° start the first pulse misses by 2.11 m and the first hit slips by one recharge. [`docs/START_ANGLE_FINDING.md`](docs/START_ANGLE_FINDING.md) explains why.
 
-Start with:
+<br>
 
-- [`docs/DESIGN.md`](docs/DESIGN.md) — architecture and controller reasoning.
-- [`docs/ANALYSIS.md`](docs/ANALYSIS.md) — plant, Routh, root-locus, Bode, and transient analysis.
-- [`docs/ASSUMPTIONS.md`](docs/ASSUMPTIONS.md) — assumptions and their consequences.
-- [`docs/PROTOCOL.md`](docs/PROTOCOL.md) — held-out evaluation and statistical protocol.
-- [`docs/DESIGN_ITERATIONS.md`](docs/DESIGN_ITERATIONS.md) — design alternatives and measured decisions.
-- [`outputs/README.md`](outputs/README.md) — how the committed results were generated.
+## Go deeper
 
-## Technical report
+| Read | For |
+|:---|:---|
+| [`docs/DESIGN.md`](docs/DESIGN.md) | Architecture and the reasoning behind each block |
+| [`docs/ANALYSIS.md`](docs/ANALYSIS.md) | Plant, Routh, root locus, Bode and transient analysis |
+| [`docs/DECISIONS.md`](docs/DECISIONS.md) | Every design decision and the measurement that settled it |
+| [`docs/DESIGN_ITERATIONS.md`](docs/DESIGN_ITERATIONS.md) | Alternatives that were tried, adopted or rejected |
+| [`docs/ASSUMPTIONS.md`](docs/ASSUMPTIONS.md) | What the handout leaves open, and what changes if we guessed wrong |
+| [`docs/PROTOCOL.md`](docs/PROTOCOL.md) | Seed separation and statistical reporting rules |
+| [`outputs/README.md`](outputs/README.md) | The exact command behind every result file |
+| [`report/`](report/README.md) | The IEEE-format report: `make export` refreshes its numbers, `make report-zip` bundles it for Overleaf |
 
-The IEEE-style report is in [`report/`](report/README.md).
+<br>
 
-The repository includes:
+## Team
 
-- `main.tex` — IEEE conference-format report source.
-- `generated/numbers.tex` and supporting `.tex` tables — generated numerical macros and tables (`make export`).
-- `make report-zip` — builds the Overleaf upload bundle `build/overleaf.zip`.
-- `README.md` — report-specific build and submission notes.
+Shourya Saxena, Shashwat Gupta, Surhud Naik and Jay Motwani, for ME 319 Control Systems at IIT Bombay, Autumn 2026.
 
-Compile the report and check its page count before treating it as submission-final.
+Released under the [MIT License](LICENSE).
 
----
+<br>
 
-## Reproducibility and interpretation
-
-The experiment protocol reserves:
-
-| Seed range | Purpose |
-|---|---|
-| MC1–MC200 | Tuning / calibration |
-| MC201–MC4999 | Exploration and paired design studies |
-| MC5000–MC5999 | Held-out evaluation |
-| HB\<seed\> | Adversarial stress tests, reported separately |
-
-The final controller is frozen before the held-out MC5000–MC5999 campaign. No held-out seed is used to tune the reported design. A no-hit run is counted as a failure and is not silently removed from first-hit statistics. Stress and out-of-spec sensor variants are reported as sensitivity experiments, not as nominal specification compliance.
-
-This separation is part of the project design: it makes it easier to audit where a number came from and what claim it can support.
-
----
-
-## License
-
-Distributed under the repository's [MIT License](LICENSE).
-
----
-
-<div align="center">
-
-**ME 319 · Control Systems · IIT Bombay**
-
-*Estimate the motion. Track the present. Fire on probability.*
-
-</div>
+<p align="center">
+  <i>Estimate the motion. Track the present. Fire on probability.</i>
+</p>
