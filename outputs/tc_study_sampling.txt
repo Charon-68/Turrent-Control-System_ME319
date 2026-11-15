@@ -1,0 +1,41 @@
+1. Radar rate against Nyquist
+   radar period 50 ms -> 20 Hz, Nyquist 10.0 Hz = 62.83 rad/s.  Plant resonance 55.94 rad/s = 8.90 Hz is 89 % of that Nyquist; loop crossover 4.10 rad/s is 6.5 %.
+
+2. LOS-rate content of the worst-case target (v = 150 m/s, a = 20 m/s^2, r = 800 m)
+   LOS rate    |theta_dot|  <= v/r = 0.1875 rad/s (10.74 deg/s)
+   LOS accel   |theta_ddot| <= a/r + v^2/r^2 = 0.0602 rad/s^2  (tangential acceleration plus 2 v_r v_t / r^2 at 45 deg to the line of sight)
+   equivalent frequency: a sinusoidal LOS rate of amplitude 0.1875 rad/s with acceleration amplitude 0.0602 rad/s^2 oscillates at w = theta_ddot/theta_dot = 0.321 rad/s = 0.051 Hz
+   -> 0.0051 of the radar Nyquist; 392 radar samples per cycle (Nyquist asks for 2).
+   motion between two radar samples: rate x T = 9.38 mrad = 7.5 m of cross-range at 800 m (this is what the estimator extrapolates; it is large against the 2 m budget, small against the sampling theorem).
+   fastest maneuver family simulated (simulation/tc_independent_generator.m, bang-bang acceleration reversing every 1 s): content up to ~2 pi/(1 s) = 6.3 rad/s = 10 % of the Nyquist - still below it, but not by a large margin; that family is a stress case, not part of the handout envelope.
+   Radar noise is white and sampled at the radar instants: there is no signal above Nyquist to alias (the target signal sits ~196x below it), so no anti-alias filter is needed; the noise itself is what the Kalman filter smooths.
+
+3. Zero-order-hold delay of a sampled controller output
+   f_call     T/2 [ms]    phase at wc   phase at LOS w    phase at wres      |ZOH| at wres
+   20             25.0        -5.88 deg         -0.460 deg          -80.1 deg              0.704
+   50             10.0        -2.35 deg         -0.184 deg          -32.1 deg              0.949
+   100             5.0        -1.18 deg         -0.092 deg          -16.0 deg              0.987
+   1000            0.5        -0.12 deg         -0.009 deg           -1.6 deg              1.000
+   (ZOH(jw) = (1 - e^{-jwT})/(jwT) = sinc e^{-jwT/2}: it equals a delay of T/2 only for wT << 1.)
+   The 20 Hz row is the radar-synchronous worst case: 5.9 deg lost at crossover, 0.5 deg at the LOS-content frequency.
+
+4. Controller call rate against the plant resonance (55.9 rad/s)
+   continuous-equivalent loop with the exact ZOH factor (1 - e^{-sT})/(sT) on C(s); margins recomputed here and compared with outputs/design_report.txt
+   f_call      w_s/w_res  Nyq/w_res   PM [deg]    GM [dB]     wc/Nyq |  design_report.txt PM/GM
+   100              11.2       5.62       67.3       17.4      0.013 |              67.3 / 17.4
+   50                5.6       2.81       66.1       18.2      0.026 |              66.1 / 18.2
+   20                2.2       1.12       62.6       17.6      0.065 |              62.6 / 17.6
+   1000            112.3      56.16       68.4       16.2      0.001 |                         
+   At 20 Hz the resonance (55.9 rad/s) is 89 % of the controller Nyquist (62.8 rad/s): a 20 Hz controller cannot shape it, only gain-stabilise it; the continuous-equivalent model is
+   reliable only where the crossover is well below Nyquist (crossover/Nyquist = 0.065 at 20 Hz; the comment in tc_design_report.m says the two models agree below about Nyquist/5), which holds for the crossover but NOT near the resonance.
+   The exact sampled-data C(z) loop was not re-derived here; the design report quotes the same continuous-equivalent method.
+   Simulation evidence (outputs/ablations.txt, seeds 201-260): 20 Hz call rate intercepts 60/60 with 1 pulse miss(es), first hit later by +0.348 s [+0.285, +0.431], RMS pointing +0.424 m worse.
+
+5. Table of conclusions
+   question                                       number                             conclusion
+   radar sampling vs target content               0.321 rad/s vs Nyquist 62.8 rad/s  no aliasing of the target; 20 Hz is ample for the LOS signal
+   motion per radar sample at worst case          7.5 m at 800 m                     estimator must extrapolate; hold would exceed the 2 m budget
+   ZOH delay at the 20 Hz call rate               25.0 ms, 5.9 deg at wc             small against PM 68.5 deg
+   plant resonance vs 20 Hz Nyquist               55.9 of 62.8 rad/s (89 %)          gain-stabilised only; not shaped
+   plant resonance vs 100 Hz call rate            Nyq/w_res = 5.6                    resonance well inside the band; continuous model valid
+   crossover vs 20 Hz Nyquist                     0.065                              continuous-equivalent margins trustworthy at crossover

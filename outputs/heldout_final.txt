@@ -1,0 +1,7 @@
+MC seeds 5000..5999 (n = 1000), frozen design, 100 Hz, turret at 0 deg (chunks: heldout_MC5000_5299, heldout_MC5300_5649, heldout_MC5650_5999)
+intercepted 1000/1000  Wilson95 [0.9962, 1.0000]  failure bound < 0.383 %
+pulses 9204, hits 9198, hit rate 0.9993  Wilson95 [0.9986, 0.9997]
+first hit (successful runs): mean 1.236 s, p95 1.820 s, max 2.350 s
+pointing RMS: median 0.564 m, p95 0.834 m;  time in R_eng 99.43 %;  V_peak 589 V
+censored (no hit) seeds: []
+worst miss distance over all pulses: 3.354 m

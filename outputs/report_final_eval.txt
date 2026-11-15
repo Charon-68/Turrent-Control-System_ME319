@@ -1,0 +1,18 @@
+octave-cli --quiet --eval "tc_setup(); tc_plot_report_final_eval();"   (make report-figures)
+Numbers behind the final-evaluation figure; data: outputs/heldout_final.mat and outputs/indep_1..5.mat (no simulation run here).
+
+held-out MC5000-5999 (n = 1000): first hit  min 0.490  median 1.240  mean 1.236  p95 1.820  max 2.350 s;  share with first hit <= 1.5 s: 70.9 %
+held-out pointing RMS per run: median 0.564  p95 0.834  max 1.308 m;  seeds with RMS > 1 m: 12 of 1000
+
+independent campaign, mean first-hit time [s] and intercepts per family (new-sample flag; held flag identical)
+family         20Hz      icpt    100Hz      icpt   1000Hz      icpt
+weave         1.333    100/100    1.065    100/100    1.065    100/100
+step          1.306    100/100    1.008    100/100    1.017    100/100
+bang-bang     1.395    100/100    1.114    100/100    1.137    100/100
+arc           1.444    100/100    1.150    100/100    1.153    100/100
+pop-up        1.306    100/100    1.037    100/100    1.041    100/100
+
+independent campaign pooled over the five families, first hit per call rate [s]:
+     20 Hz: n 500  mean 1.357  p95 2.350  max 3.950
+    100 Hz: n 500  mean 1.075  p95 1.951  max 2.510
+   1000 Hz: n 500  mean 1.083  p95 2.004  max 2.527

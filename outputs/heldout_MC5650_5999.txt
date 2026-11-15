@@ -1,0 +1,7 @@
+family MC seeds 5650..5999 (n = 350)  opts: {}
+intercepted 350/350  Wilson95 [0.9891, 1.0000]  failure bound < 1.086 %
+pulses 3223, hits 3222, hit rate 0.9997  Wilson95 [0.9982, 0.9999]
+first hit (successful runs): mean 1.226 s, p95 1.820 s, max 2.050 s
+pointing RMS: median 0.560 m, p95 0.828 m;  time in R_eng 99.49 %;  V_peak 589 V
+censored (no hit) seeds: []
+worst miss distance over all pulses: 2.249 m

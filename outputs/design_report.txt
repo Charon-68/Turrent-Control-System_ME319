@@ -1,0 +1,29 @@
+octave-cli --quiet --eval "tc_setup(); tc_design_report()"
+Plant  theta/V = 1000 / ( s (320 s^2 + 3350 s + 1.0015e+06) )
+  poles: 0, -5.23+55.70j  (wn 55.9 rad/s = 8.90 Hz, zeta 0.094)
+  forward-Euler step limit 3.34 ms (integrate at <= 1 ms or use RK4/exact)
+  feed-forward V = 0.32 d3y/dt3 + 3.35 d2y/dt2 + 1001.5 dy/dt   (DEN/NUM)
+  cruise rate at +-600 V: 0.5991 rad/s (34.3 deg/s)
+Loop (continuous C): wc 4.10 rad/s, PM 68.5 deg, GM 16.1 dB
+Loop (C(z) + ZOH plant, 100 Hz): wc 4.10 rad/s, PM 67.3 deg, GM 17.4 dB
+Loop (C(z) + ZOH plant,  50 Hz): wc 4.09 rad/s, PM 66.1 deg, GM 18.2 dB
+Loop (C(z) + ZOH plant,  20 Hz): wc 4.09 rad/s, PM 62.6 deg, GM 17.6 dB
+Reference: (A3+K)(s) = (tp^3/6)(s+20)^3,  K(s) = 1.125 s^2 + 24.5 s + 165.67
+  Taylor section n=1: Hurwitz, least damping 1.00
+  Taylor section n=2: Hurwitz, least damping 0.71
+  Taylor section n=3: Hurwitz, least damping 0.36
+  Taylor section n=4: Hurwitz, least damping 0.11
+  Taylor section n=5: UNSTABLE, least damping -0.08
+Error budget: R_eng = 1.00 mrad @2 km, 2.50 mrad @800 m; drift a t_p^2/2 = 2.50 m; beam t_p ahead misses r*thd*tp ~ 38 m
+ans =
+
+  scalar structure containing the fields:
+
+    margins =
+
+        4.1014   68.4928   16.0713
+        4.1014   67.3178   17.3699
+        4.0949   66.1379   18.2126
+        4.0949   62.6186   17.5727
+
+

@@ -1,0 +1,7 @@
+octave-cli --quiet --eval "tc_setup(); tc_plot_report_scenarios();"   (make report-figures)
+Scenarios A, B, C, 100 Hz, turret starts at 0 deg, frozen design (tc_run_engagement).
+
+scn first_hit pulses   hits     rms_m max_after  in_Reng%   V_peak   I_peak  miss_max
+A        0.94      9      9     0.402     1.256     100.0      589      9.5     0.711
+B        0.94      9      9     0.513     1.253     100.0      589      9.5     1.157
+C        0.94      9      9     0.375     1.077     100.0      589      9.5     0.845

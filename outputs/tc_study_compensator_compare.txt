@@ -1,0 +1,43 @@
+Linear plant G = 1000/(s a(s)); plant velocity constant gn/a0 = 9.9850e-04 rad/s per V; type 1 (one free integrator).
+
+Lead design by the lecture procedure
+  step 1  Kv_req = 8 1/s  ->  K = Kv_req/(gn/a0) = 8012 V/rad
+  step 2  uncompensated K G: crossover 8.17 rad/s, PM0 = 88.4 deg, GM0 = 2.3 dB
+  step 3  phi_m = PM_des (60) - PM0 + eps (10) = -18.4 deg  ->  NO PHASE LEAD NEEDED (alpha = 1)
+  Sweep of Kv_req (same PM_des, eps): what the procedure would ask for on this plant
+      Kv_req  K [V/rad]  PM0 [deg]   GM0 [dB]      phi_m  verdict
+         2.0       2003       89.6       14.4      -19.6  no lead needed
+         4.0       4006       89.2        8.4      -19.2  no lead needed
+         8.0       8012       88.4        2.3      -18.4  no lead needed
+        10.0      10015       87.9        0.4      -17.9  no lead needed
+        10.4      10416        2.3        0.1       67.7  lead needed
+        10.6      10616       -3.3       -0.1       73.3  lead needed (and the loop is unstable: GM < 0)
+        12.0      12018      -20.6       -1.2       90.6  single lead cannot supply it (and the loop is unstable: GM < 0)
+        15.0      15022      -36.7       -3.1      106.7  single lead cannot supply it (and the loop is unstable: GM < 0)
+        20.0      20030      -49.4       -5.6      119.4  single lead cannot supply it (and the loop is unstable: GM < 0)
+        40.0      40060      -66.4      -11.6      136.4  single lead cannot supply it (and the loop is unstable: GM < 0)
+        75.0      75112      -74.4      -17.1      144.4  single lead cannot supply it (and the loop is unstable: GM < 0)
+  Reading: below Kv = 10.47 (the Routh limit of the P loop, Kp < 10484 V/rad) PM0 is ~90 deg, no lead is ever needed; above it the resonance at 55.9 rad/s lifts |L| over 1 again,
+  the margin there is hugely negative and the demanded phase exceeds 90 deg, which one lead cannot give.  The limit is the resonance (gain), not phase.
+  FORCED lead (phi_m = 30 deg): alpha = 0.3333, new crossover wm where |K G| = sqrt(alpha) = 0.577: wm = 14.89 rad/s, T = 1/(wm sqrt(alpha)) = 0.1163 s
+    zero at 1/T = 8.60 rad/s, pole at 1/(alpha T) = 25.79 rad/s, K = 8012 V/rad, high-frequency gain K/alpha = 24036 V/rad
+  FORCED lead, low-gain variant (Kv_req = 2, so the loop can survive): alpha = 0.3333, wm = 3.48 rad/s, T = 0.4983 s, K = 2003 V/rad, high-frequency gain 6009 V/rad
+
+Comparison (linear plant, nominal)
+compensator                 wc      PM      GM      wb        Kv       Ka ramp err/rate overshoot      tr      ts     |CS|(wN)  stable
+                       [rad/s]   [deg]    [dB] [rad/s]     [1/s]  [1/s^2]          [s]      [%]     [s]     [s]      [V/rad]        
+P, Kp = 4000              4.01    89.2     8.4    4.07      3.99        0       0.2504      0.0    0.56    0.96         4477       1
+P, K = 8012               8.17    88.4     2.3    8.42         8        0       0.1250      6.2    0.16    1.61         9800       1
+lead 30 deg, Kv 8        14.89   -38.8    -5.7    6.94         8        0          NaN      NaN     NaN     NaN        34425       0
+lead 30 deg, Kv 2         3.48   119.3     5.0    1.69         2        0       0.5000      0.0    1.39    2.91         7165       1
+PI + roll-off (final)     4.10    68.5    16.1    5.72       Inf     3.99       0.0000     15.0    0.31    2.63         1804       1
+  ramp err/rate: steady-state error divided by the ramp rate (= 1/Kv for a type-1 loop, 0 for type 2).  Kv = Inf means type 2 (Ka is the acceleration constant).
+
+What that means for this problem
+  Tracking a ramp-like LOS rate: the worst LOS rate is v/r = 150/800 = 0.1875 rad/s.  Feedback-only error with the type-1 loops: P (Kv 3.99) 0.0469 rad = 38 m at 800 m;
+  P with K = 8012 (Kv 8.00) 0.0234 rad = 19 m at 800 m; the PI loop is type 2: zero ramp error.  (Budget: 2 m, i.e. 0.0025 rad at 800 m.)
+  Noise: the controller gain seen by radar-rate noise (|C S| at the Nyquist 62.8 rad/s) is 1804 V/rad for the PI + roll-off, 4477 for P, 34425 for the Kv-8 lead (19.1x the PI; the Kv-2 lead: 7165).
+  Margins: the P loop with the higher gain has GM 2.3 dB (Routh limit Kp < 10484); a lead raises the high-frequency gain by 1/alpha = 3.0 and moves the GM the wrong way: -5.7 dB at Kv 8 (unstable if negative), 5.0 dB even at Kv 2 (the P loop at Kv 2 has 14.4 dB).
+  Why the chosen one wins: (1) the plant is type 1, so a ramp-like LOS rate leaves a finite feedback error 1/Kv with P or lead, and Kv is capped by the resonance gain limit; the PI adds the second integrator (type 2, zero ramp error);
+  (2) the plant already has ~90 deg of phase at crossover, so there is no phase deficit for a lead to repair; (3) the roll-off pole keeps the radar-rate noise gain (and the resonance gain) low, which a lead does the opposite of;
+  (4) the price of the PI is the 15 % overshoot of the loop step and a slow ~2.6 s tail (zero at -1/Ti), which the 2-DOF structure hides for the reference (exact inverse), see tc_study_feedforward_vs_feedback.

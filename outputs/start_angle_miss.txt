@@ -1,0 +1,70 @@
+octave-cli --quiet --eval "tc_setup(); tc_study_start_angle_miss();"   (make start-angle)
+Scenario A, 100 Hz, frozen design, no overrides.  Own closed loop replaying tc_run_engagement (plant: exact ZOH, 1 ms steps).
+
+== 1. Replay check against tc_run_engagement (same case)
+first pulse here: t = 1.840 s, miss 2.1086 m;  tc_run_engagement: t = 1.840 s, miss 2.1086 m;  |dt| = 0 s, |dmiss| = 0 m  -> IDENTICAL
+same case with the call times written k*T instead of k/f (a rounding-level change, as eval_adapter does): first pulse t = 1.840 s, miss 2.1509 m
+=> the first pulse misses by more than R_eng = 2.0 m on both time grids, but its exact distance moves by 0.042 m with rounding of the call times alone.
+
+== 2. State at the first pulse (80 deg start), t = 1.84 s
+turret angle                25.399 deg   target bearing   25.325 deg   target range  1636.5 m
+turret rate                -0.1345 rad/s (target LOS rate 0.0314 rad/s)
+beam error (true)           -2.109 m   -> MISS (limit 2.0 m)
+  = filter bearing error     1.241 m  [(theta_hat - theta_true) * r]
+  + offset the controller sees -0.867 m  [(theta_hat - theta_turret) * r]
+posterior sigma (beam)       0.328 m   consistency 1.000   n_upd 37
+hit probability           p_raw 0.9970  p 0.9970   (p_sure 0.99, p_arm 0.90)
+voltage                   u = -113.2 V (u_ff -120.4, u_fb 7.2), clamp 600 V -> command -113.2 V
+current                   7.81 A (acquisition budget 10 A)
+
+== 3. Diagnosis checks (computed from the log)
+(a) still slewing under the acquisition clamps?   clamps active at the pulse: yes; reference reached the linear zone at t = 1.63 s; turret rate at pulse -0.135 rad/s (22.5 % of the back-EMF cruise rate 0.599 rad/s)
+    the turret was still decelerating at the pulse: rate -0.135 rad/s at the pulse vs -0.388 rad/s 0.10 s earlier; |current| in the last 0.3 s up to 7.81 A
+    current budget exceeded in the log (first 3 s)?    no (max |i| = 9.52 A, budget 10 A)
+    voltage clamp (|u| >= 600 V) active in the last 0.3 s?  no;  anywhere in the first 3 s: no (0.00 s of 3.00 s)
+(b) integrator frozen by the acquisition freeze (freeze_acq & clamps active)?   at the pulse: yes;  in the last 0.3 s: yes;  total frozen time in the first 3 s: 1.82 s
+    (the integrator content itself is not exposed; only the freeze condition is logged)
+(c) 85 deg stop involved?   largest turret angle in the log 80.00 deg (the start), stop at 85 deg; stop-guard condition true at any call after t = 0: no; at the pulse the turret is 59.6 deg from the stop
+(d) hit probability above the firing threshold already?   p first reached p_arm (0.90) at t = 1.84 s; at the pulse p = 0.9970 >= p_sure (0.99): yes -> fire path: immediate (p >= p_sure) (inferred)
+    the rule fired at the FIRST call at which it was ready and p >= p_sure: yes;   consistency 1.000 >= 0.80: yes
+    posterior sigma at the pulse 0.33 m vs actual filter bearing error 1.24 m and controller-seen offset -0.87 m:  the probability treats the beam error as N(-0.87, 0.33^2) m, the true beam error was -2.11 m
+    filter bearing error over the 1 s before the pulse: mean 0.47 m, max |.| 1.24 m (steady-state sigma at this range is about 0.37 m, see outputs/error_budget.txt)
+
+== 4. Beam error and probability around the pulse (every call, 80 deg start)
+     t   th_deg      thd    beam_m   filt_m   seen_m   sig_m       p    lin  ready   fire
+  1.73   27.124  -0.4140   -57.405    1.199  -56.219   0.321  0.0000      0      1      0
+  1.74   26.895  -0.3880   -50.256    1.229  -49.035   0.331  0.0000      0      1      0
+  1.75   26.680  -0.3621   -43.541    0.969  -42.577   0.293  0.0000      0      1      0
+  1.76   26.480  -0.3364   -37.258    0.987  -36.274   0.302  0.0000      0      1      0
+  1.77   26.294  -0.3111   -31.402    1.005  -30.398   0.311  0.0000      0      1      0
+  1.78   26.123  -0.2860   -25.967    1.024  -24.944   0.320  0.0000      0      1      0
+  1.79   25.966  -0.2610   -20.949    1.043  -19.906   0.329  0.0000      0      1      0
+  1.80   25.824  -0.2361   -16.346    1.147  -15.199   0.292  0.0000      0      1      0
+  1.81   25.696  -0.2110   -12.158    1.170  -10.988   0.301  0.0000      0      1      0
+  1.82   25.582  -0.1857    -8.387    1.193   -7.194   0.309  0.0000      0      1      0
+  1.83   25.483  -0.1602    -5.037    1.217   -3.820   0.319  0.0000      0      1      0
+  1.84   25.399  -0.1345    -2.109    1.241   -0.867   0.328  0.9970      0      1      1
+  1.85   25.329  -0.1088     0.396    1.016    1.412   0.291  0.9581      0      1      1
+  1.86   25.274  -0.0832     2.478    1.029    3.507   0.300  0.0000      1      1      1
+  1.87   25.234  -0.0583     4.144    1.043    5.187   0.309  0.0000      1      1      1
+  1.88   25.207  -0.0355     5.417    1.057    6.474   0.318  0.0000      1      1      1
+  1.89   25.192  -0.0153     6.338    1.071    7.409   0.328  0.0000      1      1      1
+  1.90   25.189   0.0021     6.952    0.143    7.095   0.291  0.0000      1      1      0
+
+== 5. First pulse versus start angle (scenario A, 100 Hz, default noise draw)
+  start   t_pulse    miss_m   hit         p      thd    filt_m    seen_m      lin  n_pls first_hit
+     0d     0.940     0.406     1    0.9995    0.085     0.098     0.504        1      9    0.940
+    30d     0.480     0.932     1    0.9975   -0.012     0.015    -0.917        1     10    0.480
+    60d     1.280     0.967     1    0.9526   -0.107     0.364     1.331        1      9    1.280
+    80d     1.840     2.109     0    0.9970   -0.135     1.241    -0.867        0      9    2.850
+
+Filter bearing error at t = 1.84 s (the 80 deg first-pulse time) for each start:  0 deg: 1.241 m  30 deg: 1.241 m  60 deg: 1.241 m  80 deg: 1.241 m
+(it is the same for every start: the estimator never sees the turret, so this error is a property of the radar noise draw)
+
+== 6. First-pulse miss over 10 radar-noise draws (same trajectory, scenario A#1..A#10, 100 Hz)
+  start   min_miss     median   max_miss first pulse>2m   median t_p
+     0d      0.051      0.645      1.116         0/10          0.945
+    30d      0.083      0.648      1.126         0/10          0.470
+    60d      0.256      0.866      1.219         0/10          1.280
+    80d      0.620      1.162      1.709         0/10          1.850
+

@@ -1,0 +1,20 @@
+# Tested on GNU Octave 11.3.0 locally (macOS). CI installs the distribution's Octave from apt,
+# which may be an older version and may behave differently.
+name: ci
+on: [push, pull_request]
+jobs:
+  octave:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install GNU Octave (no recommended packages)
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends octave
+      - name: Octave version
+        run: octave-cli --no-gui --version
+      - name: Quick checks (analytical checks and three scenarios)
+        run: make test-quick
+      - name: Scenario table
+        run: make scenarios
+      - name: Evaluation-interface checks
+        run: make eval-check

@@ -1,0 +1,17 @@
+G(s) = Kv / ( s (1 + 2 zeta s/wn + s^2/wn^2) ),  Kv = gn/a0 = 9.9850e-04 rad/s per V, wn = 55.944 rad/s, zeta = 0.0936
+
+Asymptotic construction
+  break / corner         frequency      slope before -> after      phase asymptote
+  integrator (start)     all w          -20 dB/dec                 -90 deg
+  line crosses 0 dB at   w = Kv = 9.99e-04 (-20 dB/dec line)          not a real crossover: |G| is above 0 dB below Kv
+  resonant pair          55.94 rad/s    -20 -> -60 dB/dec (-40 added) -90 -> -270 deg (-180 added, sharp: zeta = 0.094)
+  corner frequency 55.944 rad/s = 8.904 Hz;  period 0.1123 s
+  resonant peak above the asymptote at wn: 1/(2 zeta) = 5.344 = 14.56 dB
+  asymptote value at the corner: |G| = Kv/wn = 1.785e-05 = -94.97 dB
+  exact |G| at wn: 9.539e-05 = -80.41 dB (asymptote + 1/(2 zeta) = -80.41 dB);  exact resonance maximum (searched in wn/4..4wn) 9.709e-05 = -80.26 dB at 54.946 rad/s
+  asymptote error away from the corner: max 0.348 dB for w <= wn/5, max 0.348 dB for w >= 5 wn; within a factor of 2 of wn (peak region) up to 14.60 dB
+  exact phase at wn: -179.98 deg (asymptote jump passes -180 deg); at wn/5 -92.23 deg, at 5 wn -267.77 deg
+  phase transition: the exact phase passes -135 deg at 51.0 rad/s and -225 deg at 61.4 rad/s (a 18.7% wide band around wn)
+
+Consequence for the loop: with the PI + roll-off compensator the loop crossover is at 4.10 rad/s, on the -20 dB/dec part, 13.6x below the corner, so the
+resonance sits on the -60 dB/dec skirt and is gain-stabilised (see tc_study_sensitivity / outputs/analysis.txt).

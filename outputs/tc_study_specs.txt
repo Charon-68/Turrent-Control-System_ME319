@@ -1,0 +1,23 @@
+Closed-loop poles (slowest first): [-1.6291+0i -2.8632+0i -4.8228+54.663i -4.8228-54.663i -29.664+0i]
+Closed-loop zeros of T = Ln/cl: -1  (the PI zero -1/Ti = -1.0 rad/s stays in T)
+
+Polynomial-model step response (15 s, 0.5 ms grid): final value 1.0000 (type 2, so 1)
+  Estimates
+   E1 two slowest poles: p = 1.6291, 2.8632 -> wn = 2.160 rad/s, zeta = 1.040  (overdamped: standard 2nd-order formulas do not apply; the exact step of that two-pole model is used)
+   E2 PM/bandwidth rule: zeta = PM/100 = 0.685, wb = 5.72 rad/s -> wn = 5.543 rad/s; tr = 1.8/wn, tp = pi/(wn sqrt(1-z^2)), Mp = exp(-pi z/sqrt(1-z^2)), ts = 4/(z wn)
+   E3 E1 plus the closed-loop zero at -1.0 rad/s (unit DC gain)
+
+Step specifications (feedback loop alone)
+  metric                   polynomial |   E1 2 poles    dev % |   E2 PM rule    dev % |     E3 +zero    dev % | requirement (assumed)
+  rise 10-90 % [s]             0.3109 |        1.647    429.8 |       0.3247      4.4 |       0.3103     -0.2 | <= 0.5 -> met
+  peak time [s]                 0.914 |          NaN      NaN |       0.7779    -14.9 |         0.88     -3.7 |        none -> n/a
+  overshoot [%]                 15.04 |            0   -100.0 |        5.217    -65.3 |        15.01     -0.2 | <= 20 -> met
+  settling 2 % [s]              2.627 |        2.908     10.7 |        1.054    -59.9 |         2.59     -1.4 | <= 3 -> met
+
+How good is the dominant-pole approximation here?
+  deviation > 25 % counts as poor.  E1 poor on: rise 10-90 % [s], peak time [s], overshoot [%];  E2 poor on: overshoot [%], settling 2 % [s];  E3 poor on: none
+  Reasons: (1) the two slowest poles (1.63, 2.86 rad/s) are real and of the same order as each other and as the PI zero (1.0 rad/s), so there is no dominant pair;
+  the zero sits next to the slow poles and creates the 15.0 % overshoot that the overdamped two-pole model (zeta = 1.04) cannot show; (2) the lightly damped pair at 4.8 +- 54.7j is 25x faster than wn(E1) and is ignored by every estimate;
+  (3) the PM-based second-order rule is a rough guide for a type-2 loop (it assumes no zero and a single crossover mechanism).
+  Note: the full 2-DOF controller does not follow this response; with the exact inverse the reference response is set by the generator (triple pole 20 rad/s).
+  Cross-check with outputs/analysis.txt (feedback loop step): overshoot 15.0 %, 10-90 rise 0.31 s, 2 % settling 2.63 s; here 15.0 %, 0.31 s, 2.63 s

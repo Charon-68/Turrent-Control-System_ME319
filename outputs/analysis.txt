@@ -1,0 +1,16 @@
+Plant: G_p(s) = 1000 / ( s (320 s^2 + 3350 s + 1.0015e+06) )
+  open-loop plant poles: [-5.2344+55.698i;-5.2344-55.698i;0+0i]
+Compensator: C(s) = Kp (Ti s + 1) / (Ti s (tau_f s + 1)), Kp = 4000 V/rad, Ti = 1 s, tau_f = 0.03 s
+Closed-loop poles of the feedback loop: [-1.6291+0i;-2.8632+0i;-29.664+0i;-4.8228-54.663i;-4.8228+54.663i]
+  all in the open left half plane: 1
+Routh, proportional only: a2 s^3 + a1 s^2 + a0 s + k gn.  First-column condition a1 a0 > a2 k gn gives
+  k < a1 a0 /(a2 gn) = 10484 V/rad   (design Kp = 4000 is 38.2 % of it)
+Full PI + roll-off loop: stable for gain scale 0 < k < 6.35 (i.e. Kp < 25391 V/rad); the design sits at k = 1 (gain margin 16.1 dB)
+Frequency domain: crossover 4.10 rad/s, PM 68.5 deg, phase-crossover 48.5 rad/s, GM 16.1 dB, Ms = 1.21 (1.7 dB), closed-loop bandwidth 5.72 rad/s
+  crossover is 13.7x below the plant resonance (55.9 rad/s): gain-stabilised, no notch
+Steady state (FVT, E = R/(1+L)): type 2 loop; Kp_pos = inf, Kv = inf, Ka = lim s^2 L = 3.994 1/s^2
+  step e_ss = 0, ramp e_ss = 0, parabola (accel a_th rad/s^2) e_ss = a_th/Ka = 0.2504 x a_th rad
+  worst LOS acceleration 0.060 rad/s^2 -> feedback-only error 0.0150 rad = 22.5 m at 1.5 km (the feed-forward removes it for an exact model)
+  simulated: ramp 0.1 rad/s -> e(60 s) = 3.37e-44 rad;  parabola 0.06 rad/s^2 -> e(60 s) = 0.0150 rad (FVT predicts 0.0150)
+Step of the feedback loop alone T = L/(1+L): overshoot 15.0 %, 10-90 % rise 0.31 s, 2 % settling 2.63 s
+  (the full 2-DOF controller tracks y_d through the exact inverse, so the reference response is set by the generator poles -20 rad/s, not by this loop.)

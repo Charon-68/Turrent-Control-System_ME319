@@ -1,0 +1,28 @@
+octave-cli --quiet --eval "tc_setup(); tc_test_all()"
+PASS  t_plant_poles
+PASS  t_plant_saturation
+PASS  t_ff_derived
+PASS  t_quadrature
+PASS  t_los_derivatives
+PASS  t_transition_vs_vanloan
+PASS  t_polar_conversion
+PASS  t_taylor_hurwitz
+PASS  t_reference_triple_pole
+PASS  t_beam_geometry
+PASS  t_envelope_all
+PASS  t_ticks_and_blackouts
+PASS  t_noise_isolated
+PASS  t_session_reset
+PASS  t_env_clip
+PASS  t_hit_probability
+PASS  t_integrators_agree
+PASS  t_loop_margins
+PASS  t_submission_portable
+PASS  t_standard_intercept
+PASS  t_rates
+PASS  t_interface_conventions
+PASS  t_lost_track_recovery
+PASS  t_determinism
+PASS  t_plant_mismatch
+25/25 checks passed
+ans = 1

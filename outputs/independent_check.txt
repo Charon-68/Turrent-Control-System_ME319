@@ -1,0 +1,71 @@
+INDEPENDENT CHECK of the frozen design (no design change was made because of these results)
+Generator: simulation/tc_independent_generator.m (written from the assignment text only); runner: simulation/tc_independent_run.m (turret_controller +
+turret_plant via RK4, own pulse judging).  Seeds 70000 + 1000*family + i, i = 1..100 (family 1..5).
+Per case random: start bearing/range, speed, heading, maneuver parameters, ONE blackout (onset >= 1 s, dur <= 0.5 s),
+initial turret angle in [-10, 85] deg.  Same case in all six configurations.  "new" = meas_valid 1 only on a new sample;
+"held" = meas_valid 1 on every call with the last sample held (stale through blackouts).
+Pointing RMS = cross-range error over t >= 2 s at the call instants.  first hit = mean over intercepted cases.
+
+family 1 (weave): 100 cases, generator attempts mean 2.2 max 11, |a| max 19.5 m/s^2, jerk max 93 m/s^3
+family 2 (step): 100 cases, generator attempts mean 2.8 max 13, |a| max 19.4 m/s^2, jerk max 196 m/s^3
+family 3 (bangbang): 100 cases, generator attempts mean 2.3 max 8, |a| max 19.4 m/s^2, jerk max 291 m/s^3
+family 4 (arc): 100 cases, generator attempts mean 2.0 max 13, |a| max 19.5 m/s^2, jerk max 150 m/s^3
+family 5 (popup): 100 cases, generator attempts mean 3.5 max 12, |a| max 19.5 m/s^2, jerk max 175 m/s^3
+
+family    config           n intercept first hit p95 first pulses   miss   RMS med   RMS p95
+weave       20Hz new     100   100/100     1.33s     2.30s    861      0     0.853     3.066
+weave       20Hz held    100   100/100     1.33s     2.30s    861      0     0.853     3.066
+weave      100Hz new     100   100/100     1.07s     2.03s    934      0     0.621     1.334
+weave      100Hz held    100   100/100     1.07s     2.03s    934      0     0.621     1.334
+weave     1000Hz new     100   100/100     1.07s     1.97s    944      0     0.606     1.144
+weave     1000Hz held    100   100/100     1.07s     1.97s    944      0     0.606     1.144
+step        20Hz new     100   100/100     1.31s     2.25s    865      0     0.675     1.937
+step        20Hz held    100   100/100     1.31s     2.25s    865      0     0.675     1.937
+step       100Hz new     100   100/100     1.01s     1.92s    941      0     0.437     0.723
+step       100Hz held    100   100/100     1.01s     1.92s    941      0     0.437     0.723
+step      1000Hz new     100   100/100     1.02s     1.95s    952      1     0.411     0.692
+step      1000Hz held    100   100/100     1.02s     1.95s    952      1     0.411     0.692
+bangbang    20Hz new     100   100/100     1.39s     2.25s    842      3     0.989     1.661
+bangbang    20Hz held    100   100/100     1.39s     2.25s    842      3     0.989     1.661
+bangbang   100Hz new     100   100/100     1.11s     1.91s    930      2     0.714     1.246
+bangbang   100Hz held    100   100/100     1.11s     1.91s    930      2     0.714     1.246
+bangbang  1000Hz new     100   100/100     1.14s     1.95s    938      3     0.693     1.188
+bangbang  1000Hz held    100   100/100     1.14s     1.95s    938      3     0.693     1.188
+arc         20Hz new     100   100/100     1.44s     2.35s    850      0     0.713     2.125
+arc         20Hz held    100   100/100     1.44s     2.35s    850      0     0.713     2.125
+arc        100Hz new     100   100/100     1.15s     1.95s    935      1     0.408     0.713
+arc        100Hz held    100   100/100     1.15s     1.95s    935      1     0.408     0.713
+arc       1000Hz new     100   100/100     1.15s     1.96s    940      1     0.389     0.666
+arc       1000Hz held    100   100/100     1.15s     1.96s    940      1     0.389     0.666
+popup       20Hz new     100   100/100     1.31s     2.46s    868      1     0.713     3.480
+popup       20Hz held    100   100/100     1.31s     2.46s    868      1     0.713     3.480
+popup      100Hz new     100   100/100     1.04s     2.02s    939      1     0.526     1.603
+popup      100Hz held    100   100/100     1.04s     2.02s    939      1     0.526     1.603
+popup     1000Hz new     100   100/100     1.04s     2.03s    942      2     0.513     1.364
+popup     1000Hz held    100   100/100     1.04s     2.03s    942      2     0.513     1.364
+
+POOLED over the five families (500 cases per configuration):
+    20 Hz new   intercepted 500/500 (Wilson95 [0.9924, 1.0000], failure < 0.76 %), pulse misses 4
+    20 Hz held  intercepted 500/500 (Wilson95 [0.9924, 1.0000], failure < 0.76 %), pulse misses 4
+   100 Hz new   intercepted 500/500 (Wilson95 [0.9924, 1.0000], failure < 0.76 %), pulse misses 4
+   100 Hz held  intercepted 500/500 (Wilson95 [0.9924, 1.0000], failure < 0.76 %), pulse misses 4
+  1000 Hz new   intercepted 500/500 (Wilson95 [0.9924, 1.0000], failure < 0.76 %), pulse misses 7
+  1000 Hz held  intercepted 500/500 (Wilson95 [0.9924, 1.0000], failure < 0.76 %), pulse misses 7
+
+FAILURES (cases with no interception), by configuration:
+  none
+
+CASES WITH AT LEAST ONE PULSE MISS (seed: configurations with misses -> count):
+  seed 72001 (step): 1000Hz/new->1 1000Hz/held->1
+  seed 73009 (bangbang): 20Hz/new->1 20Hz/held->1
+  seed 73012 (bangbang): 100Hz/new->1 100Hz/held->1
+  seed 73030 (bangbang): 1000Hz/new->1 1000Hz/held->1
+  seed 73033 (bangbang): 1000Hz/new->1 1000Hz/held->1
+  seed 73046 (bangbang): 1000Hz/new->1 1000Hz/held->1
+  seed 73051 (bangbang): 20Hz/new->1 20Hz/held->1
+  seed 73072 (bangbang): 100Hz/new->1 100Hz/held->1
+  seed 73099 (bangbang): 20Hz/new->1 20Hz/held->1
+  seed 74085 (arc): 100Hz/new->1 100Hz/held->1 1000Hz/new->1 1000Hz/held->1
+  seed 75008 (popup): 1000Hz/new->1 1000Hz/held->1
+  seed 75014 (popup): 100Hz/new->1 100Hz/held->1 1000Hz/new->1 1000Hz/held->1
+  seed 75043 (popup): 20Hz/new->1 20Hz/held->1

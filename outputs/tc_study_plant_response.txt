@@ -1,0 +1,17 @@
+G(s) = 1000 / ( s (320 s^2 + 3350 s + 1.0015e+06) )
+Poles: 0 and -5.2344 +55.6982j  (conjugate pair)
+  natural frequency wn = 55.944 rad/s (8.904 Hz), damping ratio zeta = 0.0936
+  damped oscillation frequency wd = 55.698 rad/s (8.865 Hz), period 0.1128 s
+  decay rate sigma = 5.234 1/s: envelope time constant 1/sigma = 0.191 s, 2% settling of the envelope 4/sigma = 0.76 s, amplitude factor per cycle exp(-sigma T) = 0.554
+  check wn^2 = a0/a2 = 3129.69 (pole modulus^2 3129.69); 2 zeta wn = a1/a2 = 10.4688 (pole pair 10.4688)
+
+Impulse response g(t) (unit impulse of volts, V s):
+  g(t) = 9.9850e-04 + 1.0029e-03 exp(-5.234 t) cos(55.698 t +3.0479 rad)   [rad per V s]
+  The constant is the final angle per volt-second gn/a0 = 9.9850e-04 rad; the oscillation (100.4 % of it at peak) rides on top and is gone by about t = 0.76 s.
+Step response y(t) (1 V step):
+  y(t) = 9.9850e-04 t -3.3400e-06 + 1.7927e-05 exp(-5.234 t) cos(55.698 t +1.3834 rad)   [rad]
+  -> asymptotically a ramp at 9.9850e-04 rad/s per volt (integrator: a constant voltage gives a constant turret rate, cruise at 600 V = 0.5991 rad/s)
+
+Cross-check against direct RK4 of the physical states (h = 0.0001 s, 1.5 s window): max |step difference| = 5.70e-16 rad (3.81e-13 of peak), max |impulse difference| = 3.22e-14 rad (1.85e-11 of peak)
+  (the impulse is the zero-input response from i(0+) = 1/L = 10 A, theta = omega = 0)
+Step minus its ramp asymptote: first peak 8.0209e-06 rad at t = 0.0865 s (half period 0.0564 s); minimum later -1.1797e-05 rad

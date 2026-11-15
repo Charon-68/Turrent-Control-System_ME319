@@ -1,0 +1,37 @@
+Final loop: crossover 4.10 rad/s, PM 68.5 deg, GM 16.1 dB.  PM(Td) = PM - wc Td; delay margin = PM/wc = 0.291 s (analytic)
+  delay margin found by bisection on the delayed loop: 0.2914 s (analytic 0.2914 s)
+
+Phase margin and gain margin of the design loop with added delay
+  delay                                              Td [s]       wc PM [deg]  GM [dB]   stable
+  none                                               0.0000     4.10     68.5     16.1        1
+  ZOH at 100 Hz (T/2)                                0.0050     4.10     67.3     17.3        1
+  ZOH at 20 Hz (T/2)                                 0.0250     4.10     62.6     16.8        1
+  estimator latency, 1 radar period (assumed)        0.0500     4.10     56.7     13.6        1
+  ZOH 20 Hz + 1 period                               0.0750     4.10     50.9     11.0        1
+  estimator latency, 2 periods (assumed)             0.1000     4.10     45.0      9.0        1
+  0.5 s blackout as a loop delay (hypothetical)      0.5000     4.10    -49.0     -6.4        0
+  GM = smallest gain margin over all -180 deg crossings; stable = all roots of the characteristic polynomial with a Pade-8 delay in the open left half plane.
+  Phase lost to a delay at the crossover: 2.4 deg per 10 ms (wc = 4.10 rad/s).  PM reaches zero at Td = 0.291 s; 45 deg of PM is kept up to Td = 0.100 s.
+
+Blackout (0.5 s) as a held reference: it delays the reference, not the loop
+  worst LOS rate 0.1875 rad/s, worst LOS acceleration 0.0602 rad/s^2 (a/r + v^2/r^2 at 800 m)
+  hold the last angle for 0.5 s: pointing error up to rate x 0.5 = 0.0938 rad = 75 m at 800 m (budget 2 m)
+  hold the last angle AND rate (coast): error from the acceleration 0.5 a t^2 = 0.0075 rad = 6.0 m at 800 m (before the filter's own uncertainty, see outputs/error_budget.txt)
+  -> a held angle misses the 2 m budget by 38x; extrapolating the estimated motion is what keeps the shot possible.  As a loop delay of 0.5 s the PM would be -49 deg (unstable): the loop does not contain it.
+
+Safe bandwidth: scale the compensator gain by k (Kp = k x 4000 V/rad); largest crossover with PM >= 45 deg and GM >= 6 dB
+    Td [s]    k_max     wc_max     wb_max   PM [deg]    GM [dB]    wc_max x Td
+     0.000    3.121      12.32      23.29       62.6        6.2          0.000
+     0.005    3.587      14.11      31.87       56.1        6.2          0.071
+     0.025    3.014      11.91      21.98       46.1        7.3          0.298
+     0.050    1.985       7.93      12.22       45.2        7.6          0.397
+     0.075    1.354       5.48       7.82       45.7        8.4          0.411
+     0.100    0.990       4.06       5.66       45.2        9.1          0.406
+     0.250       --       none         --         --         --             --   (no gain scale in 0.0316..3.98 meets PM >= 45, GM >= 6)
+  (the closed-loop bandwidth wb here is evaluated without the delay term, as a guide)
+  Reading: with the delays that actually exist in the loop (ZOH 5-25 ms; assumed latency 50-100 ms) the safe crossover falls from 14.1 rad/s (5 ms) to 4.1 rad/s (100 ms); the design crossover is 4.10 rad/s,
+  so the design keeps PM >= 45 deg up to Td = 0.100 s (first table) and is at the safe limit at 100 ms.  Safe BANDWIDTH for these delays: closed-loop wb up to ~31.9 rad/s (5 ms) ... 5.7 rad/s (100 ms); the design wb = 5.72 rad/s.
+  The k-search is not monotone at the smallest delays (the 5 ms row allows a higher gain than Td = 0): a small delay moves the -180 deg crossing down in frequency, away from the resonance peak, which raises the gain margin
+  in the first table too (16.1 -> 17.3 dB at 5 ms); from about 25 ms on the phase loss dominates.
+  With no delay the limit is the resonance (55.9 rad/s, gain margin), not the delay: the safe crossover saturates near 12.3 rad/s at Td = 0.
+  Rule of thumb that follows: wc x Td should stay under about 0.41 (rad) to keep 45 deg of margin from a starting PM of 68 deg.

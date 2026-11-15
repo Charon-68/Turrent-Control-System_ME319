@@ -1,0 +1,51 @@
+Reference: ramp 0.1875 rad/s (150 m/s at 800 m) through the generator (s+20)^-3; error e = y_d - theta over 0..10 s; metres = rad x 800 m.
+Ramp lag of the generator itself (3 om/p) = 0.0281 rad = 22.5 m: common to all rows, it is the reference, not the tracking error.
+
+plant                  |       FB end      FB peak |       FF end      FF peak |     both end    both peak   (rad; end = value at 10 s, peak = max |e|)
+nominal                |    1.938e-08    3.558e-02 |    0.000e+00    0.000e+00 |    0.000e+00    0.000e+00
+Kt -20 %               |    1.960e-08    3.562e-02 |    8.477e-04    8.477e-04 |   -1.529e-11    1.604e-04
+Kt +20 %               |    1.923e-08    3.555e-02 |   -5.656e-04    5.656e-04 |    9.998e-12    9.567e-05
+Ke -20 %               |    1.255e-07    2.950e-02 |   -4.607e-01    4.607e-01 |   -3.146e-08    7.384e-03
+Ke +20 %               |    2.357e-09    4.132e-02 |    3.073e-01    3.073e-01 |    3.931e-10    6.886e-03
+J -20 %                |    1.911e-08    3.555e-02 |   -1.198e-04    1.351e-04 |    1.674e-11    1.111e-04
+J +20 %                |    1.964e-08    3.560e-02 |    1.198e-04    1.359e-04 |   -1.718e-11    1.245e-04
+b -20 %                |    1.946e-08    3.557e-02 |   -5.588e-04    5.588e-04 |   -4.903e-12    1.103e-05
+b +20 %                |    1.929e-08    3.559e-02 |    5.585e-04    5.585e-04 |    4.858e-12    1.103e-05
+
+All 16 corners (all four parameters at +-20 %)
+corner Kt- Ke- J- b-   |    1.255e-07    2.950e-02 |   -4.607e-01    4.607e-01 |   -3.146e-08    7.384e-03
+corner Kt+ Ke- J- b-   |    1.250e-07    2.945e-02 |   -4.624e-01    4.624e-01 |   -3.118e-08    7.358e-03
+corner Kt- Ke+ J- b-   |    2.357e-09    4.132e-02 |    3.073e-01    3.073e-01 |    3.931e-10    6.886e-03
+corner Kt+ Ke+ J- b-   |    2.492e-09    4.127e-02 |    3.066e-01    3.066e-01 |    4.159e-10    6.875e-03
+corner Kt- Ke- J+ b-   |    1.266e-07    2.956e-02 |   -4.602e-01    4.602e-01 |   -3.212e-08    7.465e-03
+corner Kt+ Ke- J+ b-   |    1.258e-07    2.949e-02 |   -4.621e-01    4.621e-01 |   -3.162e-08    7.403e-03
+corner Kt- Ke+ J+ b-   |    2.084e-09    4.138e-02 |    3.075e-01    3.075e-01 |    3.460e-10    6.877e-03
+corner Kt+ Ke+ J+ b-   |    2.304e-09    4.131e-02 |    3.067e-01    3.067e-01 |    3.833e-10    6.869e-03
+corner Kt- Ke- J- b+   |    1.250e-07    2.953e-02 |   -4.585e-01    4.585e-01 |   -3.122e-08    7.357e-03
+corner Kt+ Ke- J- b+   |    1.247e-07    2.947e-02 |   -4.610e-01    4.610e-01 |   -3.102e-08    7.339e-03
+corner Kt- Ke+ J- b+   |    2.437e-09    4.135e-02 |    3.083e-01    3.083e-01 |    4.076e-10    6.911e-03
+corner Kt+ Ke+ J- b+   |    2.546e-09    4.129e-02 |    3.072e-01    3.072e-01 |    4.258e-10    6.892e-03
+corner Kt- Ke- J+ b+   |    1.262e-07    2.959e-02 |   -4.580e-01    4.580e-01 |   -3.188e-08    7.436e-03
+corner Kt+ Ke- J+ b+   |    1.255e-07    2.950e-02 |   -4.607e-01    4.607e-01 |   -3.146e-08    7.384e-03
+corner Kt- Ke+ J+ b+   |    2.161e-09    4.141e-02 |    3.085e-01    3.085e-01 |    3.600e-10    6.903e-03
+corner Kt+ Ke+ J+ b+   |    2.357e-09    4.132e-02 |    3.073e-01    3.073e-01 |    3.931e-10    6.886e-03
+
+Metres at 800 m (rad x 800)
+plant                  |     FB end    FB peak |     FF end    FF peak |   both end  both peak
+nominal                |      0.000     28.462 |      0.000      0.000 |      0.000      0.000
+Kt -20 %               |      0.000     28.495 |      0.678      0.678 |     -0.000      0.128
+Kt +20 %               |      0.000     28.439 |     -0.452      0.452 |      0.000      0.077
+Ke -20 %               |      0.000     23.604 |   -368.527    368.527 |     -0.000      5.908
+Ke +20 %               |      0.000     33.060 |    245.873    245.873 |      0.000      5.509
+J -20 %                |      0.000     28.443 |     -0.096      0.108 |      0.000      0.089
+J +20 %                |      0.000     28.480 |      0.096      0.109 |     -0.000      0.100
+b -20 %                |      0.000     28.454 |     -0.447      0.447 |     -0.000      0.009
+b +20 %                |      0.000     28.470 |      0.447      0.447 |      0.000      0.009
+corner Kt- Ke- J+ b-   |      0.000     23.651 |   -368.153    368.153 |     -0.000      5.972
+
+Nominal plant: feedback only has peak 28.462 m and end 1.6e-05 m; feed-forward only and both are exact: 0.0e+00 and 0.0e+00 m (numerical zero).
+Worst single-parameter case for each structure (peak, m): FB 33.060 (Ke +20 %), FF 368.527 (Ke -20 %), both 5.908 (Ke -20 %).
+Worst of the 16 corners for each structure (peak, m): FB 33.125, FF 369.941 (corner Kt+ Ke- J- b-), both 5.972 (corner Kt- Ke- J+ b-).
+Interpretation: feed-forward alone is exact only for the exact model, and the error then GROWS with time (a wrong rate gain: e = (1 - Kv_t/Kv_nom) om t); feedback alone has a start-up transient
+but forgets the model (type 2: error returns to zero); both: the feed-forward carries the ramp so the feedback only has to correct the small mismatch.  Peak error of both is below FB-only in 25 of 25 cases and below FF-only in 24 of 25.
+Time-domain check from the stored ablations: tc_params has these feed-forward-related fields: ff, adapt_ff, aff_gamma, aff_lo, aff_hi; none of them disables the feed-forward (adapt_ff only scales its velocity term), so no switch exists and no code was changed to add one: no time-domain ablation is reported here.

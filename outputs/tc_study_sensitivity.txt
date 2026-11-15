@@ -1,0 +1,23 @@
+Loop L = C G_p, final design (Kp = 4000 V/rad, Ti = 1 s, tau_f = 0.03 s)
+Cross-check against outputs/analysis.txt (nominal): crossover 4.10 rad/s, PM 68.5 deg, GM 16.1 dB (file: 4.10, 68.5, 16.1)
+
+Sensitivity functions
+  peak |S| = Ms = 1.210 (1.66 dB) at 51.63 rad/s   (analysis.txt: 1.21)
+  peak |T| = Mt = 1.175 (1.40 dB) at 1.56 rad/s
+  closed-loop bandwidth (|T| = -3 dB): 5.72 rad/s = 0.91 Hz;  |S| rises through -3 dB at 2.81 rad/s (disturbance rejection band)
+  |S| at 0.1 / 1 rad/s: 0.0025 / 0.201;  |S| < 0.1 below 0.666 rad/s
+  |T| at 1 / 10 / wN = 62.8 rad/s / resonance 55.9 rad/s: 1.138 / 0.436 / 0.0854 (-21.4 dB) / 0.2126 (-13.4 dB)
+  S + T = 1 check: max |S + T - 1| = 3.4e-16
+  controller sensitivity KS = C S: peak 4227 V/rad at 9.79 rad/s; at wN 1804 V/rad; at the resonance 2229 V/rad; high-frequency limit |C| -> Kp/(tau_f w)
+  (a 1 mrad sensor/estimator error at the resonance frequency would ask for 2.23 V)
+
+Where radar noise enters
+  White radar bearing noise (sigma_theta = 3.491e-04 rad per sample, flat to the 62.8 rad/s Nyquist of the 20 Hz radar) reaching the loop as a reference error e_ref:
+  - feedback-only path: theta = T e_ref, so noise inside the bandwidth (|T| ~ 1 up to 5.7 rad/s) passes untouched: the loop can only remove the part above it.
+    fraction of noise power passed (integral of |T|^2 over 0..wN divided by wN): 0.148 (amplitude 0.385);  cross-range at 2000 m if the raw bearing drove the loop: 0.269 m (raw 0.698 m)
+  - with the exact feed-forward added (our 2-DOF design) the nominal map from the reference to theta is 1 (G * G^-1 = 1): the loop does NOT attenuate reference noise at all;
+    the only low-pass left is the reference generator (triple pole p = 20 rad/s): power fraction 0.187, |F| at wN = 0.0279 (-31.1 dB)
+  - T and F both have bandwidth far above the LOS maneuver band (<= ~0.3 rad/s, see tc_study_sampling), so neither shapes the in-band noise: it must be removed by the estimator before the loop.
+    That is the Kalman filter: its steady-state cross-range error at 2000 m is 0.42 m against 0.70 m raw, and 2.52 m after a 0.5 s blackout (outputs/error_budget.txt).
+  Disturbance (torque) rejection: |S| < 0.1 below 0.666 rad/s; at the plant resonance |S| = 1.09, i.e. a disturbance there is amplified by 9 % (the peak Ms = 1.21 is the worst case, at 51.6 rad/s).
+  Voltage cost of noise: the feedback path adds |KS| (peak 4227 V/rad); the feed-forward path costs |G^-1 F| at wN = 589 V/rad (G^-1 = s (a2 s^2 + a1 s + a0)/gn).

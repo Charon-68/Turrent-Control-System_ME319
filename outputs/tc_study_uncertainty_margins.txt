@@ -1,0 +1,42 @@
+Final compensator: Kp = 4000 V/rad, Ti = 1 s, tau_f = 0.03 s.  Plant G = gn/(s a(s)), a = [L J, L b + R J, R b + N^2 Kt Ke]; J means J_eq = 3200 kg m^2.
+Nominal cross-check (outputs/analysis.txt): wc 4.10, PM 68.5, GM 16.1 dB, P-only Routh limit 10484 V/rad, full-loop limit 6.35x.
+
+case                     wc       PM       GM    P-only Kp    full-loop    full Kp   stable
+                    [rad/s]    [deg]     [dB] limit[V/rad]      scale k lim[V/rad]  (1=yes)
+nominal                4.10     68.5     16.1        10484         6.35      25391        1
+Kt -20 %               4.11     68.3     14.8        10488         5.48      21923        1
+Kt +20 %               4.10     68.6     17.2        10482         7.21      28858        1
+Ke -20 %               5.08     69.0     12.8         8391         4.38      17538        1
+Ke +20 %               3.46     67.4     18.7        12578         8.66      34629        1
+J -20 %                4.10     68.6     17.5        10602         7.48      29930        1
+J +20 %                4.11     68.3     15.0        10406         5.60      22390        1
+b -20 %                4.10     68.5     16.0        10387         6.31      25245        1
+b +20 %                4.10     68.5     16.1        10582         6.38      25536        1
+
+Worst single-parameter cases: lowest PM 67.4 deg (Ke +20 %), lowest GM 12.8 dB (Ke -20 %), lowest full-loop Routh scale 4.38 (Ke -20 %)
+
+All 16 corners (+-20 % on Kt, Ke, J, b together)
+corner                   wc       PM       GM    P-only Kp    full-loop    full Kp   stable
+Kt- Ke- J- b-          5.08     69.0     12.8         8391         4.38      17538        1
+Kt+ Ke- J- b-          5.07     69.4     15.2         8385         5.77      23086        1
+Kt- Ke+ J- b-          3.46     67.4     18.7        12578         8.66      34629        1
+Kt+ Ke+ J- b-          3.46     67.6     21.4        12573        11.78      47106        1
+Kt- Ke- J+ b-          5.10     68.4     10.7         8265         3.42      13687        1
+Kt+ Ke- J+ b-          5.08     69.0     12.8         8260         4.34      17364        1
+Kt- Ke+ J+ b-          3.46     67.1     16.3        12390         6.51      26045        1
+Kt+ Ke+ J+ b-          3.46     67.4     18.7        12385         8.58      34305        1
+Kt- Ke- J- b+          5.07     68.9     13.0         8587         4.45      17796        1
+Kt+ Ke- J- b+          5.06     69.4     15.3         8579         5.85      23405        1
+Kt- Ke+ J- b+          3.46     67.4     18.9        12868         8.78      35108        1
+Kt+ Ke+ J- b+          3.45     67.6     21.5        12860        11.93      47724        1
+Kt- Ke- J+ b+          5.10     68.3     10.8         8399         3.46      13835        1
+Kt+ Ke- J+ b+          5.08     69.0     12.8         8391         4.38      17538        1
+Kt- Ke+ J+ b+          3.46     67.1     16.4        12586         6.58      26307        1
+Kt+ Ke+ J+ b+          3.46     67.4     18.7        12578         8.66      34629        1
+
+Worst corner by phase margin: Kt- Ke+ J+ b+  PM 67.1 deg (wc 3.46 rad/s, GM 16.4 dB)
+Worst corner by gain margin : Kt- Ke- J+ b-  GM 10.7 dB, PM 68.4 deg, full-loop Routh scale 3.42 (Kp < 13687 V/rad), P-only limit 8265 V/rad
+Lowest full-loop Routh limit: Kt- Ke- J+ b-  k < 3.42
+All 16 corners and 9 single cases closed-loop stable at the design gain: 1
+Routh-array limit vs root-based limit, max relative difference over all cases: 1.7e-15
+Closed-form P-only limit vs Routh-array bisection, max relative difference: 1.4e-15

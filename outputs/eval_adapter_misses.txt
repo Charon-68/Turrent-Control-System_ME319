@@ -1,0 +1,22 @@
+octave-cli --quiet --eval "tc_setup(); addpath('evaluation'); eval_adapter_misses()"
+Cases flagged MISS in outputs/eval_adapter_sweep.txt, re-run; every pulse listed (t [s], miss distance [m], hit).
+CASE scn=A theta0_deg=80 f_Hz=100 first_hit=2.850 pulses=9 misses=1
+PULSE scn=A f_Hz=100 t=1.840 miss_m=2.151 hit=0
+PULSE scn=A f_Hz=100 t=2.850 miss_m=0.441 hit=1
+PULSE scn=A f_Hz=100 t=3.860 miss_m=0.242 hit=1
+PULSE scn=A f_Hz=100 t=4.870 miss_m=0.215 hit=1
+PULSE scn=A f_Hz=100 t=5.880 miss_m=0.238 hit=1
+PULSE scn=A f_Hz=100 t=6.890 miss_m=0.195 hit=1
+PULSE scn=A f_Hz=100 t=7.900 miss_m=0.798 hit=1
+PULSE scn=A f_Hz=100 t=8.910 miss_m=0.270 hit=1
+PULSE scn=A f_Hz=100 t=9.920 miss_m=0.227 hit=1
+CASE scn=A theta0_deg=80 f_Hz=1000 first_hit=2.852 pulses=9 misses=1
+PULSE scn=A f_Hz=1000 t=1.851 miss_m=2.111 hit=0
+PULSE scn=A f_Hz=1000 t=2.852 miss_m=0.044 hit=1
+PULSE scn=A f_Hz=1000 t=3.853 miss_m=0.370 hit=1
+PULSE scn=A f_Hz=1000 t=4.854 miss_m=0.213 hit=1
+PULSE scn=A f_Hz=1000 t=5.855 miss_m=0.222 hit=1
+PULSE scn=A f_Hz=1000 t=6.856 miss_m=0.323 hit=1
+PULSE scn=A f_Hz=1000 t=7.857 miss_m=0.816 hit=1
+PULSE scn=A f_Hz=1000 t=8.858 miss_m=0.315 hit=1
+PULSE scn=A f_Hz=1000 t=9.859 miss_m=0.015 hit=1

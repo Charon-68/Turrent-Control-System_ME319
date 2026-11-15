@@ -1,0 +1,19 @@
+DECISIONS.md contains 17 decisions: D1 D2 D3 D4 D5 D6 D7 D8 D9 D10 D11 D12 D13 D14 D15 D16 D17
+
+ablations.txt rows parsed: classes no_adapt_q lead_on guard_on no_freeze brake_slew fast_fire psure_flat p_dev_10 p_dev_30 adapt_ff aim_tp rate_20Hz
+
+D8   found in DECISIONS.md: "Feedback gains and generator pole kept from the reference, re-verified analytically"
+D5   found in DECISIONS.md: "Acquisition anti-windup (`freeze_acq`, default on) — benefit NOT confirmed in the final design"
+D6   found in DECISIONS.md: "Acceleration clamp from a current budget, not a typed constant"
+D7   found in DECISIONS.md: "Braking-curve slew (`acq_decel`) rejected after a confirmation run"
+D11  found in DECISIONS.md: "Mid-hold reference lead (`lead_hold`) removed — my own idea, refuted"
+D16  found in DECISIONS.md: "Adaptive velocity feed-forward is ineffective where it was supposed to help"
+D13  found in DECISIONS.md: "Adaptive process noise kept, because of the adversarial family"
+D10  found in DECISIONS.md: "Calibration layer: fitted, evaluated, **not adopted**"
+D14  found in DECISIONS.md: "Features with a measured null effect (kept, reported)"
+D12  found in DECISIONS.md: "Fire "slip guard" off by default"
+D15  found in DECISIONS.md: "The 'correlated copies' failure was a harness bug, not a controller weakness"
+
+Evidence strings looked up in DECISIONS.md / ablations.txt: 32 checked, 0 missing
+Decisions in the file that are infrastructure or test-method decisions and appear only in the short list: D1 D17 D2 D3 D4 D9
+wrote notes/DESIGN_ITERATIONS.md (12 entries + 6 short-list items)
